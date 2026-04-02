@@ -199,8 +199,8 @@
 }
 
 .support-team-page__security {
-  background: #111827;
-  color: #f9fafb;
+  background: var(--ink-panel);
+  color: var(--ink-text);
   border-radius: var(--radius-xl);
   padding: 1.25rem;
   box-shadow: var(--shadow-card);
@@ -226,7 +226,7 @@
   margin: 0 0 1rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #d1d5db;
+  color: var(--ink-muted);
 }
 
 .support-team-page__security-btn {
@@ -236,8 +236,8 @@
   padding: 0.65rem 1rem;
   font: inherit;
   font-weight: 700;
-  background: #fff;
-  color: #111827;
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
   cursor: pointer;
 }
 

@@ -42,7 +42,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     >
       <div className="sidebar__brand">
         <span className="sidebar__logo-mark" aria-hidden />
-        <div>
+        <div className="sidebar__brand-text">
           <div className="sidebar__logo-title">FacePe</div>
           <div className="sidebar__logo-sub">Admin Workspace</div>
         </div>
@@ -61,38 +61,38 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <SidebarNavIcon>
             <IconDashboard />
           </SidebarNavIcon>
-          Dashboard
+          <span className="sidebar__text">Dashboard</span>
         </NavLink>
         <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
           <SidebarNavIcon>
             <IconMerchants />
           </SidebarNavIcon>
-          Merchants
+          <span className="sidebar__text">Merchants</span>
         </NavLink>
         <NavLink to={ROUTES.KIOSKS} className={navClass} onClick={onClose}>
           <SidebarNavIcon>
             <IconKiosk />
           </SidebarNavIcon>
-          Kiosks
+          <span className="sidebar__text">Kiosks</span>
         </NavLink>
         <NavLink to={ROUTES.USERS} className={navClass} onClick={onClose}>
           <SidebarNavIcon>
             <IconUsers />
           </SidebarNavIcon>
-          Users
+          <span className="sidebar__text">Users</span>
         </NavLink>
         <NavLink to={ROUTES.SUPPORT_TEAM} className={navClass} onClick={onClose}>
           <SidebarNavIcon>
             <IconHeadset />
           </SidebarNavIcon>
-          Support Team
+          <span className="sidebar__text">Support Team</span>
         </NavLink>
         {canViewAuditLogs(role) ? (
           <NavLink to={ROUTES.AUDIT_LOGS} className={navClass} onClick={onClose}>
             <SidebarNavIcon>
               <IconAudit />
             </SidebarNavIcon>
-            Audit Logs
+            <span className="sidebar__text">Audit Logs</span>
           </NavLink>
         ) : null}
       </nav>
@@ -102,7 +102,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <SidebarNavIcon>
             <IconSettings />
           </SidebarNavIcon>
-          Settings
+          <span className="sidebar__text">Settings</span>
         </button>
         <button
           type="button"
@@ -112,7 +112,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <SidebarNavIcon>
             <IconLogout />
           </SidebarNavIcon>
-          Logout
+          <span className="sidebar__text">Logout</span>
         </button>
       </div>
     </aside>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { clearError, register } from '../authSlice'
 import { ROUTES } from '../../../core/config/routes'
+import { ThemeToggle } from '../../../layout/ThemeToggle'
 import './Register.css'
 
 type AccountType = 'merchant' | 'kiosk_operator'
@@ -48,6 +49,9 @@ export function Register() {
 
   return (
     <div className="register-page">
+      <div className="register-page__theme">
+        <ThemeToggle />
+      </div>
       <aside className="register-page__aside" aria-label="Product overview">
         <div className="register-page__aside-inner">
           <div className="register-page__aside-logo">FacePe</div>

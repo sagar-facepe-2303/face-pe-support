@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { clearError, login } from '../authSlice'
 import { ROUTES } from '../../../core/config/routes'
+import { ThemeToggle } from '../../../layout/ThemeToggle'
 import { AuthForm } from '../components/AuthForm'
 import './Login.css'
 
@@ -45,6 +46,9 @@ export function Login() {
 
   return (
     <div className="login-page">
+      <div className="login-page__theme">
+        <ThemeToggle />
+      </div>
       <div className="login-page__hero">
         <div className="login-page__brand">
           <span className="login-page__logo" aria-hidden />
