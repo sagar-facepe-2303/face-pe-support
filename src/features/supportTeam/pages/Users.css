@@ -1,0 +1,247 @@
+.support-team-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.support-team-page__stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 40rem) {
+  .support-team-page__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  .support-team-page__stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.support-team-page__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 6.5rem;
+}
+
+.support-team-page__stat-label {
+  margin: 0;
+  font-size: var(--label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.support-team-page__stat-value {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.support-team-page__chip {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.support-team-page__chip--ok {
+  background: var(--success-container);
+  color: #047857;
+}
+
+.support-team-page__chip--live {
+  background: var(--success-container);
+  color: #047857;
+}
+
+.support-team-page__cta {
+  background: var(--primary-gradient);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.support-team-page__cta-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.support-team-page__cta-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  opacity: 0.95;
+  line-height: 1.45;
+}
+
+.support-team-page__cta-btn {
+  margin-top: 0.25rem;
+  align-self: flex-start;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.support-team-page__cta-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.support-team-page__table {
+  padding: 0;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.support-team-page__table-head {
+  padding: 1.25rem 1.25rem 0;
+}
+
+.support-team-page__table-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.support-team-page__table-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.support-team-page__list {
+  padding: 0 1.25rem 1rem;
+}
+
+.support-team-page__loading {
+  padding: 1.5rem 1.25rem;
+  color: var(--text-secondary);
+}
+
+.support-team-page__pager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 40rem) {
+  .support-team-page__pager {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.support-team-page__pager-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.support-team-page__widgets {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .support-team-page__widgets {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.support-team-page__widget-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.support-team-page__widget-desc {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.support-team-page__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 7rem;
+}
+
+.support-team-page__bar {
+  flex: 1;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--primary-gradient);
+  min-height: 20%;
+  opacity: 0.9;
+}
+
+.support-team-page__security {
+  background: #111827;
+  color: #f9fafb;
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+
+.support-team-page__security-tag {
+  margin: 0 0 0.5rem;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #a78bfa;
+  font-weight: 700;
+}
+
+.support-team-page__security-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.support-team-page__security-body {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.support-team-page__security-btn {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+}
+
+.support-team-page__security-btn:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}

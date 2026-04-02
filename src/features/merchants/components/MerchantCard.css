@@ -1,0 +1,110 @@
+.merchant-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'identity kebab'
+    'email email'
+    'status date';
+  gap: 0.5rem 0.75rem;
+  padding: 1rem 0;
+  align-items: start;
+}
+
+@media (min-width: 48rem) {
+  .merchant-card {
+    display: none;
+  }
+}
+
+.merchant-card__identity {
+  grid-area: identity;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.merchant-card__avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--primary-fixed);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.merchant-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.merchant-card__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.merchant-card__email {
+  grid-area: email;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.merchant-card__status {
+  grid-area: status;
+  justify-self: start;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.merchant-card__status--active {
+  background: var(--success-container);
+  color: #047857;
+}
+
+.merchant-card__status--suspended {
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+.merchant-card__status--pending {
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.merchant-card__date {
+  grid-area: date;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  justify-self: end;
+}
+
+.merchant-card__kebab {
+  grid-area: kebab;
+  border: none;
+  background: var(--surface-container-low);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--on-surface);
+}
+
+.merchant-card__kebab:focus-visible {
+  outline: 2px solid var(--primary);
+}

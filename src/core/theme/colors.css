@@ -1,0 +1,36 @@
+/* FacePe + Stitch design tokens — tonal surfaces, no harsh lines */
+:root {
+  --primary: #6c3bff;
+  --primary-muted: #532cd8;
+  --primary-container: #9f6bff;
+  --primary-gradient: linear-gradient(135deg, #6c3bff, #9f6bff);
+  --primary-fixed: rgba(108, 59, 255, 0.12);
+
+  --background: #f7f7fb;
+  --surface: #fcf9f8;
+  --surface-container-low: #f6f3f2;
+  --surface-container-lowest: #ffffff;
+  --surface-container-high: #eae7e7;
+
+  --text-primary: #1c1b1b;
+  --text-secondary: #6b7280;
+  --on-surface: #1c1b1b;
+  --on-surface-variant: #6b7280;
+
+  --border: rgba(201, 196, 216, 0.15);
+  --outline-variant: #c9c4d8;
+  --error: #ef4444;
+  --error-container: rgba(239, 68, 68, 0.1);
+  --on-error-container: #b91c1c;
+  --success: #10b981;
+  --success-container: rgba(16, 185, 129, 0.12);
+  --warning: #f59e0b;
+  --warning-container: rgba(245, 158, 11, 0.12);
+
+  --shadow-ambient: 0 12px 32px -4px rgba(28, 27, 27, 0.06);
+  --shadow-card: 0 4px 24px -6px rgba(28, 27, 27, 0.08);
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-xl: 1.25rem;
+  --radius-pill: 624.9375rem;
+}

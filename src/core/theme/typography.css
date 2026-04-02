@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --heading-xl: clamp(2rem, 5vw, 3rem);
+  --heading-lg: clamp(1.5rem, 4vw, 2rem);
+  --heading-sm: 1.125rem;
+  --body-md: 1rem;
+  --body-sm: 0.875rem;
+  --label-sm: 0.6875rem;
+  --label-md: 0.75rem;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--body-md);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}

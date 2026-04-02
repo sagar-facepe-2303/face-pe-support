@@ -1,0 +1,97 @@
+/* Shared layout primitives for page content inside MainLayout */
+.page-shell {
+  max-width: 90rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .page-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.page-kicker {
+  font-size: var(--label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: var(--heading-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.page-desc {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--body-sm);
+  max-width: 40rem;
+}
+
+.card-surface {
+  background: var(--surface-container-lowest);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0.65rem 1.25rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: var(--primary-gradient);
+  color: #fff;
+  box-shadow: 0 8px 20px -8px rgba(108, 59, 255, 0.45);
+}
+
+.btn--primary:hover {
+  transform: translateY(-1px);
+}
+
+.btn--secondary {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--primary);
+}
+
+.btn--sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.875rem;
+}

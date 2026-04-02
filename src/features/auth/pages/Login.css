@@ -1,0 +1,232 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem 5rem;
+  background: var(--background);
+  background-image: radial-gradient(
+    circle at 20% 20%,
+    rgba(108, 59, 255, 0.06),
+    transparent 45%
+  );
+}
+
+.login-page__hero {
+  width: 100%;
+  max-width: 26rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-page__brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.login-page__logo {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-md);
+  background: var(--primary-gradient);
+  flex-shrink: 0;
+}
+
+.login-page__brand-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+}
+
+.login-page__brand-tag {
+  margin: 0.35rem 0 0;
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.login-page__panel {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--surface-container-lowest);
+  border-radius: 1.25rem;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-ambient);
+}
+
+@media (min-width: 48rem) {
+  .login-page__panel {
+    padding: 2rem 2rem 1.75rem;
+  }
+}
+
+.login-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.login-page__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.login-page__label {
+  font-size: var(--label-md);
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.login-page__link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--label-md);
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.login-page__link-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: 2px;
+}
+
+.login-page__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-container-low);
+  border-radius: var(--radius-md);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.login-page__input-wrap:focus-within {
+  background: var(--surface-container-lowest);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.login-page__input-icon {
+  font-size: 1rem;
+  opacity: 0.55;
+  user-select: none;
+}
+
+.login-page__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--on-surface);
+  min-width: 0;
+}
+
+.login-page__input:focus {
+  outline: none;
+}
+
+.login-page__eye {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.15rem;
+  opacity: 0.65;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.login-page__eye:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: 4px;
+}
+
+.login-page__remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.login-page__error {
+  margin: 0;
+  font-size: var(--body-sm);
+  color: var(--error);
+  font-weight: 500;
+}
+
+.login-page__submit {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: var(--radius-lg);
+}
+
+.login-page__switch {
+  margin: 0;
+  text-align: center;
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+}
+
+.login-page__switch a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-page__switch a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.login-page__status-bar {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface-container-low);
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  max-width: calc(100% - 2rem);
+}
+
+.login-page__status-bar > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.login-page__status-bar > span:not(:last-child) {
+  padding-right: 1rem;
+  border-right: 1px solid var(--border);
+}
+
+.login-page__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+@media (max-width: 30rem) {
+  .login-page__status-bar > span:not(:last-child) {
+    border-right: none;
+    padding-right: 0;
+  }
+}

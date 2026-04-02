@@ -1,0 +1,334 @@
+.kiosk-details__crumb {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.kiosk-details__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.kiosk-details__online {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+.kiosk-details__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.kiosk-details__place {
+  color: var(--text-secondary);
+}
+
+.kiosk-details__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kiosk-details__health {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+}
+
+.kiosk-details__health-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kiosk-details__section-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.kiosk-details__live-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+}
+
+.kiosk-details__health-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 48rem) {
+  .kiosk-details__health-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.kiosk-details__metric-label {
+  margin: 0;
+  font-size: var(--label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.kiosk-details__metric-value {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.kiosk-details__metric-value--ok {
+  color: #047857;
+}
+
+.kiosk-details__bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-container-low);
+  overflow: hidden;
+}
+
+.kiosk-details__bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary-gradient);
+  border-radius: var(--radius-pill);
+}
+
+.kiosk-details__bar--ok span {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.kiosk-details__metric-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.kiosk-details__lower {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 64rem) {
+  .kiosk-details__lower {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 18rem);
+    align-items: start;
+  }
+}
+
+.kiosk-details__chart {
+  padding: 1.25rem;
+}
+
+.kiosk-details__chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kiosk-details__toggle {
+  display: inline-flex;
+  padding: 0.2rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-container-low);
+}
+
+.kiosk-details__toggle-btn {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.kiosk-details__toggle-btn--on {
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+  box-shadow: var(--shadow-card);
+}
+
+.kiosk-details__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+  height: 10rem;
+}
+
+.kiosk-details__vol {
+  flex: 1;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: rgba(108, 59, 255, 0.2);
+  height: 40%;
+}
+
+.kiosk-details__vol:nth-child(odd) {
+  height: 55%;
+}
+
+.kiosk-details__vol--peak {
+  height: 85% !important;
+  background: var(--primary);
+}
+
+.kiosk-details__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.kiosk-details__spec {
+  padding: 1.25rem;
+}
+
+.kiosk-details__spec-dl {
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.kiosk-details__spec-dl dt {
+  margin: 0;
+  font-size: var(--label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.kiosk-details__spec-dl dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.kiosk-details__hardware-visual {
+  min-height: 8rem;
+  background: linear-gradient(145deg, #374151, #111827);
+  border-radius: var(--radius-xl);
+}
+
+.kiosk-details__activity {
+  padding: 1.25rem;
+}
+
+.kiosk-details__activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.kiosk-details__timeline {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.kiosk-details__logins {
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 3rem;
+}
+
+.kiosk-details__logins-head {
+  padding: 1.25rem 1.25rem 0;
+}
+
+.kiosk-details__table-wrap {
+  overflow-x: auto;
+}
+
+.kiosk-details__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.kiosk-details__table th {
+  text-align: left;
+  padding: 0.75rem 1.25rem;
+  font-size: var(--label-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  background: var(--surface-container-low);
+}
+
+.kiosk-details__table td {
+  padding: 0.85rem 1.25rem;
+}
+
+.kiosk-details__table tbody tr:hover {
+  background: var(--surface-container-high);
+}
+
+.kiosk-details__status-ok {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--success-container);
+  color: #047857;
+}
+
+.kiosk-details__status-bad {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+.kiosk-details__map-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  z-index: 12;
+}
+
+.kiosk-details__map-fab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
