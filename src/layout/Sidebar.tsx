@@ -15,6 +15,7 @@ import {
   SidebarNavIcon,
 } from './SidebarIcons'
 import './Sidebar.css'
+import facepeLogoMark from '../assets/images/facepe-logo.png'
 
 interface SidebarProps {
   isOpen: boolean
@@ -41,7 +42,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       aria-label="Primary workspace navigation"
     >
       <div className="sidebar__brand">
-        <span className="sidebar__logo-mark" aria-hidden />
+        <span className="sidebar__logo-mark" aria-hidden>
+          <img className="sidebar__logo-img" src={facepeLogoMark} alt="" aria-hidden />
+        </span>
         <div className="sidebar__brand-text">
           <div className="sidebar__logo-title">FacePe</div>
           <div className="sidebar__logo-sub">Admin Workspace</div>

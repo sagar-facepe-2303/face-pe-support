@@ -1,13 +1,13 @@
-import { useAppSelector } from '../app/hooks'
-import { ThemeToggle } from './ThemeToggle'
-import './Header.css'
+import { useAppSelector } from "../app/hooks";
+import { ThemeToggle } from "./ThemeToggle";
+import "./Header.css";
 
 interface HeaderProps {
-  onMenuClick: () => void
+  onMenuClick: () => void;
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const user = useAppSelector((s) => s.auth.user)
+  const user = useAppSelector((s) => s.auth.user);
 
   return (
     <header className="app-header" role="banner">
@@ -21,7 +21,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         >
           <span className="app-header__menu-icon" aria-hidden />
         </button>
-        <h1 className="app-header__title">FacePe Support</h1>
+        {/* <h1 className="app-header__title">FacePe Support</h1> */}
       </div>
 
       <div className="app-header__search-wrap">
@@ -29,7 +29,13 @@ export function Header({ onMenuClick }: HeaderProps) {
           Search workspace
         </label>
         <span className="app-header__search" role="search">
-          <svg className="app-header__search-icon" aria-hidden viewBox="0 0 24 24" width="20" height="20">
+          <svg
+            className="app-header__search-icon"
+            aria-hidden
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+          >
             <path
               fill="currentColor"
               d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
@@ -47,7 +53,11 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       <div className="app-header__right">
         <ThemeToggle />
-        <button type="button" className="app-header__icon-btn" aria-label="Notifications">
+        <button
+          type="button"
+          className="app-header__icon-btn"
+          aria-label="Notifications"
+        >
           <span className="app-header__badge" aria-hidden />
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
             <path
@@ -56,7 +66,11 @@ export function Header({ onMenuClick }: HeaderProps) {
             />
           </svg>
         </button>
-        <button type="button" className="app-header__icon-btn" aria-label="Help">
+        <button
+          type="button"
+          className="app-header__icon-btn"
+          aria-label="Help"
+        >
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
             <path
               fill="currentColor"
@@ -66,19 +80,23 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
         <div className="app-header__profile">
           <div className="app-header__avatar" aria-hidden>
-            {(user?.name ?? 'A')
-              .split(' ')
+            {(user?.name ?? "A")
+              .split(" ")
               .map((n) => n[0])
-              .join('')
+              .join("")
               .slice(0, 2)
               .toUpperCase()}
           </div>
           <div className="app-header__profile-text">
-            <span className="app-header__profile-name">{user?.name ?? 'Guest'}</span>
-            <span className="app-header__profile-role">{user?.role?.replaceAll('_', ' ') ?? '—'}</span>
+            <span className="app-header__profile-name">
+              {user?.name ?? "Guest"}
+            </span>
+            <span className="app-header__profile-role">
+              {user?.role?.replaceAll("_", " ") ?? "—"}
+            </span>
           </div>
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -91,30 +91,6 @@ export function Dashboard() {
           </footer>
         </section>
 
-        <section
-          className="dashboard__panel dashboard__panel--console card-surface"
-          aria-label="System console"
-        >
-          <header className="dashboard__panel-head">
-            <h2 className="dashboard__console-title">Console</h2>
-          </header>
-          <pre className="dashboard__console" tabIndex={0}>
-            <code>
-              <span className="dashboard__log dashboard__log--ok">
-                [09:14:02] Sync OK · edge-west
-              </span>
-              {"\n"}
-              <span className="dashboard__log dashboard__log--info">
-                [09:14:08] Manifest refresh
-              </span>
-              {"\n"}
-              <span className="dashboard__log dashboard__log--warn">
-                [09:14:21] Kiosk latency warning
-              </span>
-            </code>
-          </pre>
-        </section>
-
         <aside className="dashboard__aside" aria-label="Action center">
           <article className="dashboard__task dashboard__task--critical card-surface">
             <h3 className="dashboard__task-title">Critical</h3>
