@@ -1,46 +1,49 @@
-import { type FormEvent, useEffect, useId, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../../app/hooks'
-import { clearError, login } from '../authSlice'
-import { ROUTES } from '../../../core/config/routes'
-import { ThemeToggle } from '../../../layout/ThemeToggle'
-import { AuthForm } from '../components/AuthForm'
-import './Login.css'
+import { type FormEvent, useEffect, useId, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { clearError, login } from "../authSlice";
+import { ROUTES } from "../../../core/config/routes";
+import { ThemeToggle } from "../../../layout/ThemeToggle";
+import { AuthForm } from "../components/AuthForm";
+import "./Login.css";
 
 export function Login() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const formTitleId = useId()
-  const token = useAppSelector((s) => s.auth.token)
-  const status = useAppSelector((s) => s.auth.status)
-  const error = useAppSelector((s) => s.auth.error)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const formTitleId = useId();
+  const token = useAppSelector((s) => s.auth.token);
+  const status = useAppSelector((s) => s.auth.status);
+  const error = useAppSelector((s) => s.auth.error);
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const from =
-    (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? ROUTES.HOME
+    (location.state as { from?: { pathname: string } } | null)?.from
+      ?.pathname ?? ROUTES.HOME;
 
   useEffect(() => {
     if (token) {
-      navigate(from, { replace: true })
+      navigate(from, { replace: true });
     }
-  }, [token, from, navigate])
+  }, [token, from, navigate]);
 
   useEffect(() => {
     return () => {
-      dispatch(clearError())
-    }
-  }, [dispatch])
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const result = await dispatch(login({ email, password, rememberDevice: remember }))
+    e.preventDefault();
+    const result = await dispatch(
+      login({ email, password, rememberDevice: remember }),
+    );
     if (login.fulfilled.match(result)) {
-      navigate(from, { replace: true })
+      navigate(from, { replace: true });
     }
   }
 
@@ -69,8 +72,8 @@ export function Login() {
           onSubmit={handleSubmit}
           footer={
             <>
-              Authorized access only. Unauthorized attempts are logged. Need help?{' '}
-              <a href="#security">Contact Security Team</a>
+              Authorized access only. Unauthorized attempts are logged. Need
+              help? <a href="#security">Contact Security Team</a>
             </>
           }
         >
@@ -112,7 +115,7 @@ export function Login() {
               <input
                 id="login-password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 className="login-page__input"
                 value={password}
@@ -122,7 +125,7 @@ export function Login() {
               <button
                 type="button"
                 className="login-page__eye"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 onClick={() => setShowPassword((v) => !v)}
               >
                 👁
@@ -148,9 +151,9 @@ export function Login() {
           <button
             type="submit"
             className="login-page__submit btn btn--primary"
-            disabled={status === 'loading'}
+            disabled={status === "loading"}
           >
-            {status === 'loading' ? 'Signing in…' : 'Sign In to Workspace'} →
+            {status === "loading" ? "Signing in…" : "Sign In to Workspace"} →
           </button>
 
           <p className="login-page__switch">
@@ -167,5 +170,5 @@ export function Login() {
         <span>V4.2.0-STABLE</span>
       </div>
     </div>
-  )
+  );
 }

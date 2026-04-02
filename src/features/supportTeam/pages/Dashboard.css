@@ -110,7 +110,8 @@
 
 @media (min-width: 64rem) {
   .dashboard__grid {
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 16rem);
+    /* Live feed takes the primary column; action center stays compact */
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 16rem);
     align-items: start;
   }
 }
