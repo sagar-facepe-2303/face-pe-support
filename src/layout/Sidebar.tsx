@@ -3,6 +3,17 @@ import { ROUTES } from '../core/config/routes'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { logout } from '../features/auth/authSlice'
 import { canViewAuditLogs } from '../core/constants/roles'
+import {
+  IconAudit,
+  IconDashboard,
+  IconHeadset,
+  IconKiosk,
+  IconLogout,
+  IconMerchants,
+  IconSettings,
+  IconUsers,
+  SidebarNavIcon,
+} from './SidebarIcons'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -47,28 +58,40 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <nav className="sidebar__nav" aria-label="Main">
         <NavLink to={ROUTES.HOME} className={navClass} end onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--grid" aria-hidden />
+          <SidebarNavIcon>
+            <IconDashboard />
+          </SidebarNavIcon>
           Dashboard
         </NavLink>
         <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--store" aria-hidden />
+          <SidebarNavIcon>
+            <IconMerchants />
+          </SidebarNavIcon>
           Merchants
         </NavLink>
         <NavLink to={ROUTES.KIOSKS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--kiosk" aria-hidden />
+          <SidebarNavIcon>
+            <IconKiosk />
+          </SidebarNavIcon>
           Kiosks
         </NavLink>
         <NavLink to={ROUTES.USERS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--users" aria-hidden />
+          <SidebarNavIcon>
+            <IconUsers />
+          </SidebarNavIcon>
           Users
         </NavLink>
         <NavLink to={ROUTES.SUPPORT_TEAM} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--headset" aria-hidden />
+          <SidebarNavIcon>
+            <IconHeadset />
+          </SidebarNavIcon>
           Support Team
         </NavLink>
         {canViewAuditLogs(role) ? (
           <NavLink to={ROUTES.AUDIT_LOGS} className={navClass} onClick={onClose}>
-            <span className="sidebar__icon sidebar__icon--audit" aria-hidden />
+            <SidebarNavIcon>
+              <IconAudit />
+            </SidebarNavIcon>
             Audit Logs
           </NavLink>
         ) : null}
@@ -76,7 +99,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <div className="sidebar__footer">
         <button type="button" className="sidebar__link sidebar__link--ghost">
-          <span className="sidebar__icon sidebar__icon--gear" aria-hidden />
+          <SidebarNavIcon>
+            <IconSettings />
+          </SidebarNavIcon>
           Settings
         </button>
         <button
@@ -84,7 +109,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           className="sidebar__link sidebar__link--logout"
           onClick={handleLogout}
         >
-          <span className="sidebar__icon sidebar__icon--logout" aria-hidden />
+          <SidebarNavIcon>
+            <IconLogout />
+          </SidebarNavIcon>
           Logout
         </button>
       </div>
