@@ -5,6 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FacePe Support · Admin Workspace</title>
+    <script>
+      try {
+        var t = localStorage.getItem('facepe-theme');
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

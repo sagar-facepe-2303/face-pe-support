@@ -1,8 +1,16 @@
 .register-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--surface-container-lowest);
+}
+
+.register-page__theme {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 60;
 }
 
 @media (min-width: 64rem) {

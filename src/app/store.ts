@@ -5,9 +5,11 @@ import merchantReducer from '../features/merchants/merchantSlice'
 import kioskReducer from '../features/kiosks/kioskSlice'
 import userReducer from '../features/users/userSlice'
 import auditReducer from '../features/auditLogs/auditSlice'
+import themeReducer from '../features/theme/themeSlice'
 
 export const store = configureStore({
   reducer: {
+    theme: themeReducer,
     auth: authReducer,
     support: supportReducer,
     merchants: merchantReducer,

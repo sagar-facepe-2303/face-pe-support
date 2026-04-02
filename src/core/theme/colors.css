@@ -1,5 +1,7 @@
 /* FacePe + Stitch design tokens — tonal surfaces, no harsh lines */
 :root {
+  color-scheme: light;
+
   --primary: #6c3bff;
   --primary-muted: #532cd8;
   --primary-container: #9f6bff;
@@ -33,4 +35,49 @@
   --radius-md: 0.75rem;
   --radius-xl: 1.25rem;
   --radius-pill: 624.9375rem;
+
+  /* Dark “console” style panels (dashboard, security cards) */
+  --ink-panel: #111827;
+  --ink-panel-deep: #0b1220;
+  --ink-text: #e5e7eb;
+  --ink-muted: #9ca3af;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --primary: #8b5cf6;
+  --primary-muted: #7c3aed;
+  --primary-container: #a78bfa;
+  --primary-gradient: linear-gradient(135deg, #7c3aed, #a78bfa);
+  --primary-fixed: rgba(139, 92, 246, 0.22);
+
+  --background: #0c0c10;
+  --surface: #121218;
+  --surface-container-low: #18181f;
+  --surface-container-lowest: #1e1e28;
+  --surface-container-high: #2a2a36;
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --on-surface: #fafafa;
+  --on-surface-variant: #a1a1aa;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --outline-variant: rgba(255, 255, 255, 0.12);
+  --error: #f87171;
+  --error-container: rgba(248, 113, 113, 0.15);
+  --on-error-container: #fecaca;
+  --success: #34d399;
+  --success-container: rgba(52, 211, 153, 0.15);
+  --warning: #fbbf24;
+  --warning-container: rgba(251, 191, 36, 0.15);
+
+  --shadow-ambient: 0 12px 40px -6px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 4px 28px -4px rgba(0, 0, 0, 0.5);
+
+  --ink-panel: #0f0f16;
+  --ink-panel-deep: #08080c;
+  --ink-text: #f4f4f5;
+  --ink-muted: #a1a1aa;
 }

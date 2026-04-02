@@ -110,7 +110,8 @@
 
 @media (min-width: 64rem) {
   .dashboard__grid {
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 16rem);
+    /* Live feed takes the primary column; action center stays compact */
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 16rem);
     align-items: start;
   }
 }
@@ -148,26 +149,26 @@
 }
 
 .dashboard__panel--console .card-surface {
-  background: #111827;
-  color: #e5e7eb;
+  background: var(--ink-panel);
+  color: var(--ink-text);
 }
 
 .dashboard__panel--console {
-  background: #111827;
-  color: #e5e7eb;
+  background: var(--ink-panel);
+  color: var(--ink-text);
 }
 
 .dashboard__console-title {
   margin: 0;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--ink-text);
 }
 
 .dashboard__console {
   margin: 0;
   padding: 1rem;
-  background: #0b1220;
+  background: var(--ink-panel-deep);
   border-radius: var(--radius-md);
   font-size: 0.75rem;
   line-height: 1.6;

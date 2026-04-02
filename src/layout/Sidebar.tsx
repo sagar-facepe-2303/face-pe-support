@@ -3,7 +3,19 @@ import { ROUTES } from '../core/config/routes'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { logout } from '../features/auth/authSlice'
 import { canViewAuditLogs } from '../core/constants/roles'
+import {
+  IconAudit,
+  IconDashboard,
+  IconHeadset,
+  IconKiosk,
+  IconLogout,
+  IconMerchants,
+  IconSettings,
+  IconUsers,
+  SidebarNavIcon,
+} from './SidebarIcons'
 import './Sidebar.css'
+import facepeLogoMark from '../assets/images/facepe-logo.png'
 
 interface SidebarProps {
   isOpen: boolean
@@ -30,8 +42,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       aria-label="Primary workspace navigation"
     >
       <div className="sidebar__brand">
-        <span className="sidebar__logo-mark" aria-hidden />
-        <div>
+        <span className="sidebar__logo-mark" aria-hidden>
+          <img className="sidebar__logo-img" src={facepeLogoMark} alt="" aria-hidden />
+        </span>
+        <div className="sidebar__brand-text">
           <div className="sidebar__logo-title">FacePe</div>
           <div className="sidebar__logo-sub">Admin Workspace</div>
         </div>
@@ -47,45 +61,61 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <nav className="sidebar__nav" aria-label="Main">
         <NavLink to={ROUTES.HOME} className={navClass} end onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--grid" aria-hidden />
-          Dashboard
+          <SidebarNavIcon>
+            <IconDashboard />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Dashboard</span>
         </NavLink>
         <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--store" aria-hidden />
-          Merchants
+          <SidebarNavIcon>
+            <IconMerchants />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Merchants</span>
         </NavLink>
         <NavLink to={ROUTES.KIOSKS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--kiosk" aria-hidden />
-          Kiosks
+          <SidebarNavIcon>
+            <IconKiosk />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Kiosks</span>
         </NavLink>
         <NavLink to={ROUTES.USERS} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--users" aria-hidden />
-          Users
+          <SidebarNavIcon>
+            <IconUsers />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Users</span>
         </NavLink>
         <NavLink to={ROUTES.SUPPORT_TEAM} className={navClass} onClick={onClose}>
-          <span className="sidebar__icon sidebar__icon--headset" aria-hidden />
-          Support Team
+          <SidebarNavIcon>
+            <IconHeadset />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Support Team</span>
         </NavLink>
         {canViewAuditLogs(role) ? (
           <NavLink to={ROUTES.AUDIT_LOGS} className={navClass} onClick={onClose}>
-            <span className="sidebar__icon sidebar__icon--audit" aria-hidden />
-            Audit Logs
+            <SidebarNavIcon>
+              <IconAudit />
+            </SidebarNavIcon>
+            <span className="sidebar__text">Audit Logs</span>
           </NavLink>
         ) : null}
       </nav>
 
       <div className="sidebar__footer">
         <button type="button" className="sidebar__link sidebar__link--ghost">
-          <span className="sidebar__icon sidebar__icon--gear" aria-hidden />
-          Settings
+          <SidebarNavIcon>
+            <IconSettings />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Settings</span>
         </button>
         <button
           type="button"
           className="sidebar__link sidebar__link--logout"
           onClick={handleLogout}
         >
-          <span className="sidebar__icon sidebar__icon--logout" aria-hidden />
-          Logout
+          <SidebarNavIcon>
+            <IconLogout />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Logout</span>
         </button>
       </div>
     </aside>
