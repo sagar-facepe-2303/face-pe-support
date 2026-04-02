@@ -229,7 +229,7 @@
 
 .kiosk-details__hardware-visual {
   min-height: 8rem;
-  background: linear-gradient(145deg, #374151, #111827);
+  background: linear-gradient(145deg, #374151, var(--ink-panel));
   border-radius: var(--radius-xl);
 }
 
@@ -321,8 +321,8 @@
   height: 3rem;
   border-radius: 50%;
   border: none;
-  background: #111827;
-  color: #fff;
+  background: var(--ink-panel);
+  color: var(--ink-text);
   font-size: 1.25rem;
   cursor: pointer;
   z-index: 12;

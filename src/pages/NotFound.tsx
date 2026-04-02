@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../core/config/routes'
+import { ThemeToggle } from '../layout/ThemeToggle'
 import '../layout/Layout.css'
 import './NotFound.css'
 
 export function NotFound() {
   return (
     <main className="not-found" role="main">
+      <div className="not-found__theme">
+        <ThemeToggle />
+      </div>
       <div className="not-found__card">
         <p className="not-found__code" aria-hidden>
           404

@@ -7,7 +7,17 @@
   min-height: 100vh;
   padding: 1rem 0.75rem;
   z-index: 30;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, width 0.22s ease, min-width 0.22s ease, box-shadow 0.2s ease;
+}
+
+.sidebar__brand-text,
+.sidebar__text {
+  min-width: 0;
+  max-width: 12rem;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.22s ease, opacity 0.18s ease;
 }
 
 @media (max-width: 63.99rem) {
@@ -22,6 +32,59 @@
 
   .sidebar--open {
     transform: translateX(0);
+  }
+}
+
+@media (min-width: 64rem) {
+  .sidebar {
+    width: 4.75rem;
+    min-width: 4.75rem;
+    overflow: hidden;
+  }
+
+  .sidebar:hover,
+  .sidebar:focus-within {
+    width: 16.5rem;
+    min-width: 16.5rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-ambient);
+    z-index: 40;
+  }
+
+  .sidebar:not(:hover):not(:focus-within) .sidebar__brand-text,
+  .sidebar:not(:hover):not(:focus-within) .sidebar__text {
+    max-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar:hover .sidebar__brand-text,
+  .sidebar:hover .sidebar__text,
+  .sidebar:focus-within .sidebar__brand-text,
+  .sidebar:focus-within .sidebar__text {
+    max-width: 12rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar__brand {
+    justify-content: center;
+  }
+
+  .sidebar:hover .sidebar__brand,
+  .sidebar:focus-within .sidebar__brand {
+    justify-content: flex-start;
+  }
+
+  .sidebar__link {
+    justify-content: center;
+    gap: 0;
+  }
+
+  .sidebar:hover .sidebar__link,
+  .sidebar:focus-within .sidebar__link {
+    justify-content: flex-start;
+    gap: 0.75rem;
   }
 }
 

@@ -1,4 +1,5 @@
 import { useAppSelector } from '../app/hooks'
+import { ThemeToggle } from './ThemeToggle'
 import './Header.css'
 
 interface HeaderProps {
@@ -45,6 +46,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="app-header__right">
+        <ThemeToggle />
         <button type="button" className="app-header__icon-btn" aria-label="Notifications">
           <span className="app-header__badge" aria-hidden />
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
