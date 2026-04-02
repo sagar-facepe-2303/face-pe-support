@@ -109,9 +109,7 @@ export function Dashboard() {
             <div className="dashboard__efficiency-inner">
               <p className="dashboard__efficiency-label">Global efficiency</p>
               <p className="dashboard__efficiency-value">98.4%</p>
-              <p className="dashboard__efficiency-sub">
-                AI optimization active
-              </p>
+              <p className="dashboard__efficiency-sub">Optimization active</p>
             </div>
           </article>
         </aside>
