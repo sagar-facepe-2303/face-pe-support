@@ -1,49 +1,49 @@
-import { type FormEvent, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../../app/hooks'
-import { clearError, register } from '../authSlice'
-import { ROUTES } from '../../../core/config/routes'
-import { ThemeToggle } from '../../../layout/ThemeToggle'
-import './Register.css'
+import { type FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { clearError, register } from "../authSlice";
+import { ROUTES } from "../../../core/config/routes";
+import { ThemeToggle } from "../../../layout/ThemeToggle";
+import "./Register.css";
 
-type AccountType = 'merchant' | 'kiosk_operator'
+type AccountType = "merchant" | "kiosk_operator";
 
 export function Register() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const token = useAppSelector((s) => s.auth.token)
-  const status = useAppSelector((s) => s.auth.status)
-  const error = useAppSelector((s) => s.auth.error)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const token = useAppSelector((s) => s.auth.token);
+  const status = useAppSelector((s) => s.auth.status);
+  const error = useAppSelector((s) => s.auth.error);
 
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [accountType, setAccountType] = useState<AccountType>('merchant')
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>("merchant");
 
   useEffect(() => {
     if (token) {
-      navigate(ROUTES.HOME, { replace: true })
+      navigate(ROUTES.HOME, { replace: true });
     }
-  }, [token, navigate])
+  }, [token, navigate]);
 
   useEffect(() => {
     return () => {
-      dispatch(clearError())
-    }
-  }, [dispatch])
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (password !== confirm) {
-      return
+      return;
     }
     const result = await dispatch(
-      register({ firstName, lastName, email, password, accountType })
-    )
+      register({ firstName, lastName, email, password, accountType }),
+    );
     if (register.fulfilled.match(result)) {
-      navigate(ROUTES.HOME, { replace: true })
+      navigate(ROUTES.HOME, { replace: true });
     }
   }
 
@@ -56,25 +56,38 @@ export function Register() {
         <div className="register-page__aside-inner">
           <div className="register-page__aside-logo">FacePe</div>
           <h1 className="register-page__headline">
-            Empower your <span className="register-page__accent">commerce</span> journey.
+            Empower your <span className="register-page__accent">commerce</span>{" "}
+            journey.
           </h1>
           <p className="register-page__lede">
-            Join the next generation of merchant orchestration. Access real-time support, kiosk
-            analytics, and user management in one unified workspace.
+            Join the next generation of merchant orchestration. Access real-time
+            support, kiosk analytics, and user management in one unified
+            workspace.
           </p>
           <div className="register-page__feature-row">
             <div className="register-page__feature-card">
               <span className="register-page__feature-icon" aria-hidden />
               <div>
-                <div className="register-page__feature-title">Merchant Portal</div>
-                <div className="register-page__feature-desc">Operations &amp; settlements</div>
+                <div className="register-page__feature-title">
+                  Merchant Portal
+                </div>
+                <div className="register-page__feature-desc">
+                  Operations &amp; settlements
+                </div>
               </div>
             </div>
             <div className="register-page__feature-card">
-              <span className="register-page__feature-icon register-page__feature-icon--kiosk" aria-hidden />
+              <span
+                className="register-page__feature-icon register-page__feature-icon--kiosk"
+                aria-hidden
+              />
               <div>
-                <div className="register-page__feature-title">Kiosk Control</div>
-                <div className="register-page__feature-desc">Health &amp; remote actions</div>
+                <div className="register-page__feature-title">
+                  Kiosk Control
+                </div>
+                <div className="register-page__feature-desc">
+                  Health &amp; remote actions
+                </div>
               </div>
             </div>
           </div>
@@ -90,8 +103,15 @@ export function Register() {
             </p>
           </header>
 
-          <form className="register-page__form" onSubmit={handleSubmit} noValidate>
-            <section className="register-page__section" aria-labelledby="reg-identity">
+          <form
+            className="register-page__form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <section
+              className="register-page__section"
+              aria-labelledby="reg-identity"
+            >
               <h3 id="reg-identity" className="register-page__section-title">
                 <span className="register-page__section-bar" aria-hidden />
                 Identity details
@@ -140,45 +160,69 @@ export function Register() {
               </div>
             </section>
 
-            <section className="register-page__section" aria-labelledby="reg-account">
+            {/* <section
+              className="register-page__section"
+              aria-labelledby="reg-account"
+            >
               <h3 id="reg-account" className="register-page__section-title">
                 <span className="register-page__section-bar" aria-hidden />
                 Account type
               </h3>
-              <div className="register-page__account-grid" role="listbox" aria-label="Account type">
+              <div
+                className="register-page__account-grid"
+                role="listbox"
+                aria-label="Account type"
+              >
                 <button
                   type="button"
                   role="option"
-                  aria-selected={accountType === 'merchant'}
-                  className={`register-page__account-card${accountType === 'merchant' ? ' register-page__account-card--selected' : ''}`}
-                  onClick={() => setAccountType('merchant')}
+                  aria-selected={accountType === "merchant"}
+                  className={`register-page__account-card${
+                    accountType === "merchant"
+                      ? " register-page__account-card--selected"
+                      : ""
+                  }`}
+                  onClick={() => setAccountType("merchant")}
                 >
                   <span className="register-page__account-icon" aria-hidden />
                   <div>
                     <div className="register-page__account-name">Merchant</div>
-                    <div className="register-page__account-hint">Store owner / manager</div>
+                    <div className="register-page__account-hint">
+                      Store owner / manager
+                    </div>
                   </div>
                 </button>
                 <button
                   type="button"
                   role="option"
-                  aria-selected={accountType === 'kiosk_operator'}
-                  className={`register-page__account-card${accountType === 'kiosk_operator' ? ' register-page__account-card--selected' : ''}`}
-                  onClick={() => setAccountType('kiosk_operator')}
+                  aria-selected={accountType === "kiosk_operator"}
+                  className={`register-page__account-card${
+                    accountType === "kiosk_operator"
+                      ? " register-page__account-card--selected"
+                      : ""
+                  }`}
+                  onClick={() => setAccountType("kiosk_operator")}
                 >
                   <span
                     className="register-page__account-icon register-page__account-icon--kiosk"
                     aria-hidden
                   />
                   <div>
-                    <div className="register-page__account-name">Kiosk Operator</div>
-                    <div className="register-page__account-hint">Technical manager</div>
+                    <div className="register-page__account-name">
+                      Kiosk Operator
+                    </div>
+                    <div className="register-page__account-hint">
+                      Technical manager
+                    </div>
                   </div>
                 </button>
               </div>
-            </section>
+            </section> */}
 
-            <section className="register-page__section" aria-labelledby="reg-security">
+            <section
+              className="register-page__section"
+              aria-labelledby="reg-security"
+            >
               <h3 id="reg-security" className="register-page__section-title">
                 <span className="register-page__section-bar" aria-hidden />
                 Security
@@ -229,13 +273,15 @@ export function Register() {
             <button
               type="submit"
               className="register-page__submit btn btn--primary"
-              disabled={status === 'loading' || password !== confirm}
+              disabled={status === "loading" || password !== confirm}
             >
-              {status === 'loading' ? 'Initializing…' : 'Initialize Workspace →'}
+              {status === "loading"
+                ? "Initializing…"
+                : "Initialize Workspace →"}
             </button>
 
             <p className="register-page__switch">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link to={ROUTES.LOGIN} className="register-page__switch-link">
                 Sign In to FacePe
               </Link>
@@ -250,5 +296,5 @@ export function Register() {
         </div>
       </div>
     </div>
-  )
+  );
 }
