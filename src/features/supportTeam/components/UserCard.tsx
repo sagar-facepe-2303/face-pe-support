@@ -9,6 +9,8 @@ export function UserCard({ agent }: UserCardProps) {
   const pct = agent.assignedTasks.total
     ? Math.round((agent.assignedTasks.done / agent.assignedTasks.total) * 100)
     : 0
+  const roleClass = agent.roleLabel.replaceAll('_', '-')
+  const roleLabel = agent.roleLabel.replaceAll('_', ' ').toUpperCase()
 
   return (
     <article className="user-card">
@@ -23,8 +25,8 @@ export function UserCard({ agent }: UserCardProps) {
       <div className="user-card__body">
         <div className="user-card__row">
           <h3 className="user-card__name">{agent.name}</h3>
-          <span className={`user-card__role user-card__role--${agent.roleLabel.toLowerCase().replace(/\s+/g, '-')}`}>
-            {agent.roleLabel}
+          <span className={`user-card__role user-card__role--${roleClass}`}>
+            {roleLabel}
           </span>
         </div>
         <p className="user-card__email">{agent.email}</p>

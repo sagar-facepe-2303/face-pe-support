@@ -27,14 +27,40 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path={ROUTES.HOME} element={<Dashboard />} />
-            <Route path={ROUTES.MERCHANTS} element={<MerchantList />} />
-            <Route path={ROUTES.MERCHANT_DETAIL} element={<MerchantDetails />} />
-            <Route path={ROUTES.KIOSKS} element={<KioskList />} />
-            <Route path={ROUTES.KIOSK_DETAIL} element={<KioskDetails />} />
-            <Route path={ROUTES.USERS} element={<UserList />} />
-            <Route path={ROUTES.USER_DETAIL} element={<UserDetails />} />
-            <Route path={ROUTES.SUPPORT_TEAM} element={<SupportTeamPage />} />
-            <Route element={<ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]} />}>
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[ROLES.SUPER_ADMIN, ROLES.MERCHANT_ADMIN, ROLES.MERCHANT_SUPPORT]}
+                />
+              }
+            >
+              <Route path={ROUTES.MERCHANTS} element={<MerchantList />} />
+              <Route path={ROUTES.MERCHANT_DETAIL} element={<MerchantDetails />} />
+              <Route path={ROUTES.KIOSKS} element={<KioskList />} />
+              <Route path={ROUTES.KIOSK_DETAIL} element={<KioskDetails />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.USER_SUPPORT]}
+                />
+              }
+            >
+              <Route path={ROUTES.USERS} element={<UserList />} />
+              <Route path={ROUTES.USER_DETAIL} element={<UserDetails />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]} />
+              }
+            >
+              <Route path={ROUTES.SUPPORT_TEAM} element={<SupportTeamPage />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]} />
+              }
+            >
               <Route path={ROUTES.AUDIT_LOGS} element={<AuditLogs />} />
             </Route>
           </Route>

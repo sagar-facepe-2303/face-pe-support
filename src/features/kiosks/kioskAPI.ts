@@ -1,3 +1,5 @@
+import api from '../../core/api/axios'
+
 export interface KioskRow {
   id: string
   serialId: string
@@ -20,6 +22,17 @@ export interface KioskDetail extends KioskRow {
   serialNumber: string
   osVersion: string
   uptime: string
+}
+
+export interface KioskHeartbeatRequest {
+  is_online: boolean
+  face_status: string
+  camera_status: string
+}
+
+export interface KioskHeartbeatResponse {
+  acknowledged: boolean
+  server_timestamp: string
 }
 
 export async function fetchKiosks(): Promise<KioskRow[]> {
@@ -68,6 +81,14 @@ export async function fetchKioskById(id: string): Promise<KioskDetail> {
     osVersion: 'FacePe OS 4.2',
     uptime: '18d 4h',
   }
+}
+
+export async function sendKioskHeartbeat(
+  kioskId: string,
+  payload: KioskHeartbeatRequest
+): Promise<KioskHeartbeatResponse> {
+  const response = await api.post<KioskHeartbeatResponse>(`/kiosks/${kioskId}/heartbeat`, payload)
+  return response.data
 }
 
 function delay(ms: number): Promise<void> {

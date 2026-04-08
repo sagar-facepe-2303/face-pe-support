@@ -1,5 +1,7 @@
-import type { AuthUser } from './types'
+import api from '../../core/api/axios'
 import { ROLES } from '../../core/constants/roles'
+import type { Role } from '../../core/constants/roles'
+import type { AuthUser } from './types'
 
 export interface LoginPayload {
   email: string
@@ -15,44 +17,102 @@ export interface RegisterPayload {
   accountType: 'merchant' | 'kiosk_operator'
 }
 
-/** Mock JWT — not a real token */
-function mockToken(email: string): string {
-  return `mock.${btoa(email)}.${Date.now()}`
+interface LoginResponseShape {
+  access_token: string
+  refresh_token: string
+  user?: {
+    id?: string
+    email: string
+    name?: string
+    role: Role
+    is_active?: boolean
+  }
+  id?: string
+  email?: string
+  name?: string
+  role?: Role
+  is_active?: boolean
+}
+
+function normalizeUser(raw: LoginResponseShape['user']): AuthUser {
+  if (!raw) {
+    throw new Error('Login response missing user profile')
+  }
+  return {
+    id: raw.id ?? raw.email,
+    email: raw.email,
+    name: raw.name ?? raw.email.split('@')[0],
+    role: raw.role,
+  }
+}
+
+export async function loginRequest(payload: LoginPayload): Promise<{
+  user: AuthUser
+  token: string
+  refreshToken: string
+}> {
+  const response = await api.post<LoginResponseShape>('/auth/login', {
+    email: payload.email,
+    password: payload.password,
+  })
+  const body = response.data
+  const userPayload =
+    body.user ??
+    (body.email && body.role
+      ? {
+          id: body.id ?? body.email,
+          email: body.email,
+          name: body.name,
+          role: body.role,
+          is_active: body.is_active,
+        }
+      : undefined)
+
+  return {
+    user: normalizeUser(userPayload),
+    token: body.access_token,
+    refreshToken: body.refresh_token,
+  }
+}
+
+export async function refreshRequest(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
+  const response = await api.post<{ access_token: string; refresh_token: string }>('/auth/refresh', {
+    refresh_token: refreshToken,
+  })
+  return {
+    token: response.data.access_token,
+    refreshToken: response.data.refresh_token,
+  }
 }
 
 /**
- * Mock login — does not perform network I/O.
+ * Backend has no public register endpoint for support portal.
+ * This keeps the current Register page usable by calling the bootstrap helper.
  */
-export async function loginRequest(payload: LoginPayload): Promise<{ user: AuthUser; token: string }> {
-  await delay(400)
-  if (!payload.email || !payload.password) {
-    throw new Error('Email and password are required')
-  }
-  const user: AuthUser = {
-    id: 'usr-admin-1',
+export async function registerRequest(payload: RegisterPayload): Promise<{
+  user: AuthUser
+  token: string
+  refreshToken: string
+}> {
+  await api.post('/support-users/seed-super-admin', {
+    name: `${payload.firstName} ${payload.lastName}`.trim(),
     email: payload.email,
-    name: 'Admin User',
-    role: ROLES.SUPER_ADMIN,
-    avatarUrl: undefined,
-  }
-  return { user, token: mockToken(payload.email) }
-}
+    password: payload.password,
+  })
 
-export async function registerRequest(payload: RegisterPayload): Promise<{ user: AuthUser; token: string }> {
-  await delay(500)
+  const login = await loginRequest({ email: payload.email, password: payload.password })
   const user: AuthUser = {
-    id: 'usr-new-1',
+    id: login.user.id,
     email: payload.email,
     name: `${payload.firstName} ${payload.lastName}`.trim(),
-    role: payload.accountType === 'kiosk_operator' ? ROLES.SUPPORT : ROLES.ADMIN,
+    role: payload.accountType === 'kiosk_operator' ? ROLES.MERCHANT_SUPPORT : ROLES.MERCHANT_ADMIN,
   }
-  return { user, token: mockToken(payload.email) }
+  return { user, token: login.token, refreshToken: login.refreshToken }
 }
 
-export async function logoutRequest(): Promise<void> {
-  await delay(150)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+export async function logoutRequest(refreshToken: string | null): Promise<void> {
+  if (!refreshToken) return
+  await api.post('/auth/logout', {
+    refresh_token: refreshToken,
+  })
 }

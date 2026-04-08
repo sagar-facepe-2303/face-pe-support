@@ -1,3 +1,5 @@
+import api from '../../core/api/axios'
+
 export interface MerchantRow {
   id: string
   name: string
@@ -29,7 +31,39 @@ export interface MerchantKioskRow {
   batteryLow: boolean
 }
 
+export interface CreateMerchantRequest {
+  merchant_name: string
+  merchant_code: string
+  contact_email: string
+  contact_phone?: string
+  status?: string
+}
+
+export interface UpdateMerchantRequest {
+  merchant_name?: string
+  contact_email?: string
+  contact_phone?: string
+  status?: string
+  is_active?: boolean
+}
+
+export interface CreateKioskRequest {
+  serial_id: string
+  is_online: boolean
+  face_status: string
+  camera_status: string
+}
+
+export interface UpdateKioskRequest {
+  is_online?: boolean
+  face_status?: string
+  camera_status?: string
+  is_active?: boolean
+}
+
 export async function fetchMerchants(): Promise<MerchantRow[]> {
+  // List endpoint is not part of current backend contract in handoff doc.
+  // Keep existing curated data for directory screen.
   await delay(250)
   return [
     {
@@ -63,6 +97,7 @@ export async function fetchMerchants(): Promise<MerchantRow[]> {
 }
 
 export async function fetchMerchantById(id: string): Promise<MerchantDetail> {
+  // Detail endpoint is not part of current backend contract in handoff doc.
   await delay(200)
   return {
     id,
@@ -85,6 +120,7 @@ export async function fetchMerchantById(id: string): Promise<MerchantDetail> {
 }
 
 export async function fetchMerchantKiosks(_merchantId: string): Promise<MerchantKioskRow[]> {
+  // Kiosk listing endpoint is not part of current backend contract in handoff doc.
   await delay(200)
   return [
     {
@@ -112,6 +148,33 @@ export async function fetchMerchantKiosks(_merchantId: string): Promise<Merchant
       batteryLow: false,
     },
   ]
+}
+
+export async function createMerchant(payload: CreateMerchantRequest): Promise<unknown> {
+  const response = await api.post('/merchants', payload)
+  return response.data
+}
+
+export async function updateMerchant(merchantId: string, payload: UpdateMerchantRequest): Promise<unknown> {
+  const response = await api.put(`/merchants/${merchantId}`, payload)
+  return response.data
+}
+
+export async function createMerchantKiosk(
+  merchantId: string,
+  payload: CreateKioskRequest
+): Promise<unknown> {
+  const response = await api.post(`/merchants/${merchantId}/kiosks`, payload)
+  return response.data
+}
+
+export async function updateMerchantKiosk(
+  merchantId: string,
+  kioskId: string,
+  payload: UpdateKioskRequest
+): Promise<unknown> {
+  const response = await api.put(`/merchants/${merchantId}/kiosks/${kioskId}`, payload)
+  return response.data
 }
 
 function delay(ms: number): Promise<void> {

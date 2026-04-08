@@ -57,7 +57,7 @@
   color: var(--primary);
 }
 
-.user-card__role--admin {
+.user-card__role--merchant-admin {
   background: rgba(107, 114, 128, 0.15);
   color: var(--on-surface);
 }
@@ -67,7 +67,8 @@
   color: #b45309;
 }
 
-.user-card__role--support {
+.user-card__role--user-support,
+.user-card__role--merchant-support {
   background: var(--success-container);
   color: #047857;
 }

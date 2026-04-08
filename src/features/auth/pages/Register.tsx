@@ -20,7 +20,7 @@ export function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [accountType, setAccountType] = useState<AccountType>("merchant");
+  const [accountType] = useState<AccountType>("merchant");
 
   useEffect(() => {
     if (token) {

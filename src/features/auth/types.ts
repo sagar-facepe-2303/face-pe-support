@@ -11,6 +11,7 @@ export interface AuthUser {
 export interface AuthState {
   user: AuthUser | null
   token: string | null
+  refreshToken: string | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
 }

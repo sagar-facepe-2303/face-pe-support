@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { loadSupportAgents } from '../supportSlice'
 import { UserCard } from '../components/UserCard'
+import { getAssignableSupportRoles } from '../../../core/constants/roles'
 import '../../../layout/Layout.css'
 import './Users.css'
 
@@ -12,6 +13,9 @@ export function Users() {
   const dispatch = useAppDispatch()
   const agents = useAppSelector((s) => s.support.agents)
   const loading = useAppSelector((s) => s.support.loadingAgents)
+  const actorRole = useAppSelector((s) => s.auth.user?.role)
+  const assignableRoles = getAssignableSupportRoles(actorRole)
+  const canInvite = assignableRoles.length > 0
 
   useEffect(() => {
     dispatch(loadSupportAgents())
@@ -54,8 +58,12 @@ export function Users() {
         </article>
         <article className="support-team-page__cta card-surface" aria-label="Invite member">
           <h2 className="support-team-page__cta-title">New member</h2>
-          <p className="support-team-page__cta-desc">Add a new agent to the FacePe ecosystem.</p>
-          <button type="button" className="support-team-page__cta-btn">
+          <p className="support-team-page__cta-desc">
+            {canInvite
+              ? `You can create: ${assignableRoles.join(', ')}`
+              : 'Your role cannot create support users.'}
+          </p>
+          <button type="button" className="support-team-page__cta-btn" disabled={!canInvite}>
             + Invite member
           </button>
         </article>

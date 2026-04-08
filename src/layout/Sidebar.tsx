@@ -1,8 +1,14 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { ROUTES } from '../core/config/routes'
-import { useAppDispatch, useAppSelector } from '../app/hooks'
-import { logout } from '../features/auth/authSlice'
-import { canViewAuditLogs } from '../core/constants/roles'
+import { NavLink, useNavigate } from "react-router-dom";
+import { ROUTES } from "../core/config/routes";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { logout } from "../features/auth/authSlice";
+import {
+  canAccessMerchantScope,
+  canAccessUserScope,
+  canViewAuditLogs,
+  hasRole,
+  ROLES,
+} from "../core/constants/roles";
 import {
   IconAudit,
   IconDashboard,
@@ -13,40 +19,47 @@ import {
   IconSettings,
   IconUsers,
   SidebarNavIcon,
-} from './SidebarIcons'
-import './Sidebar.css'
-import facepeLogoMark from '../assets/images/facepe-logo.png'
+} from "./SidebarIcons";
+import "./Sidebar.css";
+import facepeLogoMark from "../assets/images/facepe-logo.png";
 
 interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  isActive ? 'sidebar__link sidebar__link--active' : 'sidebar__link'
+  isActive ? "sidebar__link sidebar__link--active" : "sidebar__link";
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const role = useAppSelector((s) => s.auth.user?.role)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const role = useAppSelector((s) => s.auth.user?.role);
 
   async function handleLogout() {
-    await dispatch(logout())
-    navigate(ROUTES.LOGIN, { replace: true })
-    onClose()
+    await dispatch(logout());
+    navigate(ROUTES.LOGIN, { replace: true });
+    onClose();
   }
 
   return (
     <aside
-      className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}
+      className={`sidebar ${isOpen ? "sidebar--open" : ""}`}
       aria-label="Primary workspace navigation"
     >
       <div className="sidebar__brand">
         <span className="sidebar__logo-mark" aria-hidden>
-          <img className="sidebar__logo-img" src={facepeLogoMark} alt="" aria-hidden />
+          <img
+            className="sidebar__logo-img"
+            src={facepeLogoMark}
+            alt=""
+            aria-hidden
+          />
         </span>
         <div className="sidebar__brand-text">
-          <div className="sidebar__logo-title">FacePe</div>
+          <div className="sidebar__logo-title">
+            FacePe
+          </div>
           <div className="sidebar__logo-sub">Admin Workspace</div>
         </div>
         <button
@@ -66,32 +79,48 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </SidebarNavIcon>
           <span className="sidebar__text">Dashboard</span>
         </NavLink>
-        <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
-          <SidebarNavIcon>
-            <IconMerchants />
-          </SidebarNavIcon>
-          <span className="sidebar__text">Merchants</span>
-        </NavLink>
-        <NavLink to={ROUTES.KIOSKS} className={navClass} onClick={onClose}>
-          <SidebarNavIcon>
-            <IconKiosk />
-          </SidebarNavIcon>
-          <span className="sidebar__text">Kiosks</span>
-        </NavLink>
-        <NavLink to={ROUTES.USERS} className={navClass} onClick={onClose}>
-          <SidebarNavIcon>
-            <IconUsers />
-          </SidebarNavIcon>
-          <span className="sidebar__text">Users</span>
-        </NavLink>
-        <NavLink to={ROUTES.SUPPORT_TEAM} className={navClass} onClick={onClose}>
-          <SidebarNavIcon>
-            <IconHeadset />
-          </SidebarNavIcon>
-          <span className="sidebar__text">Support Team</span>
-        </NavLink>
+        {canAccessMerchantScope(role) ? (
+          <>
+            <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
+              <SidebarNavIcon>
+                <IconMerchants />
+              </SidebarNavIcon>
+              <span className="sidebar__text">Merchants</span>
+            </NavLink>
+            <NavLink to={ROUTES.KIOSKS} className={navClass} onClick={onClose}>
+              <SidebarNavIcon>
+                <IconKiosk />
+              </SidebarNavIcon>
+              <span className="sidebar__text">Kiosks</span>
+            </NavLink>
+          </>
+        ) : null}
+        {canAccessUserScope(role) ? (
+          <NavLink to={ROUTES.USERS} className={navClass} onClick={onClose}>
+            <SidebarNavIcon>
+              <IconUsers />
+            </SidebarNavIcon>
+            <span className="sidebar__text">Users</span>
+          </NavLink>
+        ) : null}
+        {hasRole(role, [ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]) ? (
+          <NavLink
+            to={ROUTES.SUPPORT_TEAM}
+            className={navClass}
+            onClick={onClose}
+          >
+            <SidebarNavIcon>
+              <IconHeadset />
+            </SidebarNavIcon>
+            <span className="sidebar__text">Support Team</span>
+          </NavLink>
+        ) : null}
         {canViewAuditLogs(role) ? (
-          <NavLink to={ROUTES.AUDIT_LOGS} className={navClass} onClick={onClose}>
+          <NavLink
+            to={ROUTES.AUDIT_LOGS}
+            className={navClass}
+            onClick={onClose}
+          >
             <SidebarNavIcon>
               <IconAudit />
             </SidebarNavIcon>
@@ -119,5 +148,5 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </button>
       </div>
     </aside>
-  )
+  );
 }

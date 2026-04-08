@@ -1,3 +1,5 @@
+import api from '../../core/api/axios'
+
 export interface PlatformUserRow {
   id: string
   name: string
@@ -26,7 +28,37 @@ export interface UserTransactionRow {
   status: 'SUCCESS' | 'FAILED'
 }
 
+export type OtpPurpose = 'read_user' | 'update_user' | 'delete_user'
+
+export interface SendOtpRequest {
+  purpose: OtpPurpose
+  target_user_id: string
+}
+
+export interface SendOtpResponse {
+  session_id: string
+  expires_at: string
+}
+
+export interface VerifyOtpRequest {
+  session_id: string
+  code: string
+}
+
+export interface VerifyOtpResponse {
+  otp_token: string
+  expires_at: string
+}
+
+export interface UpdateUserRequest {
+  user_name?: string
+  user_email?: string
+  user_phone?: string
+}
+
 export async function fetchUsers(): Promise<PlatformUserRow[]> {
+  // User list endpoint is not part of current backend contract in handoff doc.
+  // Keep existing list data for the directory grid.
   await delay(240)
   return [
     {
@@ -57,6 +89,8 @@ export async function fetchUserById(id: string): Promise<{
   user: PlatformUserDetail
   transactions: UserTransactionRow[]
 }> {
+  // Profile detail route exists in backend and requires OTP scope token.
+  // For current screen we keep local activity table plus backend-ready user call helper below.
   await delay(230)
   const user: PlatformUserDetail = {
     id,
@@ -90,6 +124,46 @@ export async function fetchUserById(id: string): Promise<{
     },
   ]
   return { user, transactions }
+}
+
+export async function getUserById(userId: string, otpToken: string): Promise<unknown> {
+  const response = await api.get(`/users/${userId}`, {
+    headers: {
+      'X-OTP-Token': otpToken,
+    },
+  })
+  return response.data
+}
+
+export async function updateUserById(
+  userId: string,
+  payload: UpdateUserRequest,
+  otpToken: string
+): Promise<unknown> {
+  const response = await api.put(`/users/${userId}`, payload, {
+    headers: {
+      'X-OTP-Token': otpToken,
+    },
+  })
+  return response.data
+}
+
+export async function deleteUserById(userId: string, otpToken: string): Promise<void> {
+  await api.delete(`/users/${userId}`, {
+    headers: {
+      'X-OTP-Token': otpToken,
+    },
+  })
+}
+
+export async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
+  const response = await api.post<SendOtpResponse>('/otp/send', payload)
+  return response.data
+}
+
+export async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> {
+  const response = await api.post<VerifyOtpResponse>('/otp/verify', payload)
+  return response.data
 }
 
 function delay(ms: number): Promise<void> {
