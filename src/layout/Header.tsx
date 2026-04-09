@@ -1,3 +1,5 @@
+import { NavLink } from "react-router-dom";
+import { ROUTES } from "../core/config/routes";
 import { useAppSelector } from "../app/hooks";
 import { ThemeToggle } from "./ThemeToggle";
 import "./Header.css";
@@ -78,7 +80,11 @@ export function Header({ onMenuClick }: HeaderProps) {
             />
           </svg>
         </button>
-        <div className="app-header__profile">
+        <NavLink
+          to={ROUTES.PROFILE}
+          className="app-header__profile app-header__profile-link"
+          aria-label="Open profile"
+        >
           <div className="app-header__avatar" aria-hidden>
             {(user?.name ?? "A")
               .split(" ")
@@ -95,7 +101,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               {user?.role?.replaceAll("_", " ") ?? "—"}
             </span>
           </div>
-        </div>
+        </NavLink>
       </div>
     </header>
   );

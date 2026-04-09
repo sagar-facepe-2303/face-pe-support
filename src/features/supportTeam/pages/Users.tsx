@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { loadSupportAgents } from '../supportSlice'
 import { UserCard } from '../components/UserCard'
-import { getAssignableSupportRoles } from '../../../core/constants/roles'
+import { ROLES, getAssignableSupportRoles } from '../../../core/constants/roles'
+import { ROUTES } from '../../../core/config/routes'
 import '../../../layout/Layout.css'
 import './Users.css'
 
@@ -16,6 +18,7 @@ export function Users() {
   const actorRole = useAppSelector((s) => s.auth.user?.role)
   const assignableRoles = getAssignableSupportRoles(actorRole)
   const canInvite = assignableRoles.length > 0
+  const showCreateAdminPageAction = actorRole === ROLES.SUPER_ADMIN
 
   useEffect(() => {
     dispatch(loadSupportAgents())
@@ -32,6 +35,11 @@ export function Users() {
           </p>
         </div>
         <div className="support-team-page__actions">
+          {showCreateAdminPageAction ? (
+            <Link to={ROUTES.SUPPORT_TEAM_CREATE_ADMIN} className="btn btn--primary btn--sm">
+              Create Admin
+            </Link>
+          ) : null}
           <button type="button" className="btn btn--secondary btn--sm">
             Filter
           </button>

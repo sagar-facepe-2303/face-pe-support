@@ -48,7 +48,7 @@ export function canMutateUsers(role: string | undefined): boolean {
 
 export function canCreateSupportUserRole(actorRole: string | undefined, targetRole: Role): boolean {
   if (actorRole === ROLES.SUPER_ADMIN) {
-    return targetRole === ROLES.SUPER_ADMIN || targetRole === ROLES.MERCHANT_ADMIN
+    return targetRole === ROLES.USER_ADMIN || targetRole === ROLES.MERCHANT_ADMIN
   }
   if (actorRole === ROLES.USER_ADMIN) {
     return targetRole === ROLES.USER_SUPPORT
@@ -61,7 +61,7 @@ export function canCreateSupportUserRole(actorRole: string | undefined, targetRo
 
 export function getAssignableSupportRoles(actorRole: string | undefined): Role[] {
   if (actorRole === ROLES.SUPER_ADMIN) {
-    return [ROLES.SUPER_ADMIN, ROLES.MERCHANT_ADMIN]
+    return [ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]
   }
   if (actorRole === ROLES.USER_ADMIN) {
     return [ROLES.USER_SUPPORT]

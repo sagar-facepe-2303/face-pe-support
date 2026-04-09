@@ -1,4 +1,5 @@
 import api from '../../core/api/axios'
+import { getApiErrorMessage } from '../../core/api/parseApiError'
 import { ROLES } from '../../core/constants/roles'
 import { canCreateSupportUserRole } from '../../core/constants/roles'
 import type { Role } from '../../core/constants/roles'
@@ -112,7 +113,17 @@ export async function createSupportUser(
   if (!canCreateSupportUserRole(actorRole, payload.role)) {
     throw new Error('You are not allowed to create this support role.')
   }
-  const response = await api.post<SupportUserResponse>('/support-users', payload)
+  try {
+    const response = await api.post<SupportUserResponse>('/support-users', payload)
+    return response.data
+  } catch (e) {
+    throw new Error(getApiErrorMessage(e))
+  }
+}
+
+/** Fetches a support portal operator by id (used for Profile when no “me” route exists). */
+export async function fetchSupportUserById(supportUserId: string): Promise<SupportUserResponse> {
+  const response = await api.get<SupportUserResponse>(`/support-users/${supportUserId}`)
   return response.data
 }
 

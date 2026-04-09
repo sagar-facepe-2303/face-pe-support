@@ -8,6 +8,7 @@ import { Login } from '../features/auth/pages/Login'
 import { Register } from '../features/auth/pages/Register'
 import { Dashboard } from '../features/supportTeam/pages/Dashboard'
 import { Users as SupportTeamPage } from '../features/supportTeam/pages/Users'
+import { CreateSupportAdmin } from '../features/supportTeam/pages/CreateSupportAdmin'
 import { MerchantList } from '../features/merchants/pages/MerchantList'
 import { MerchantDetails } from '../features/merchants/pages/MerchantDetails'
 import { KioskList } from '../features/kiosks/pages/KioskList'
@@ -15,6 +16,7 @@ import { KioskDetails } from '../features/kiosks/pages/KioskDetails'
 import { UserList } from '../features/users/pages/UserList'
 import { UserDetails } from '../features/users/pages/UserDetails'
 import { AuditLogs } from '../features/auditLogs/pages/AuditLogs'
+import { Profile } from '../features/auth/pages/Profile'
 import { NotFound } from '../pages/NotFound'
 
 export function AppRoutes() {
@@ -27,6 +29,7 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
             <Route path={ROUTES.HOME} element={<Dashboard />} />
+            <Route path={ROUTES.PROFILE} element={<Profile />} />
             <Route
               element={
                 <ProtectedRoute
@@ -55,6 +58,9 @@ export function AppRoutes() {
               }
             >
               <Route path={ROUTES.SUPPORT_TEAM} element={<SupportTeamPage />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]} />}>
+              <Route path={ROUTES.SUPPORT_TEAM_CREATE_ADMIN} element={<CreateSupportAdmin />} />
             </Route>
             <Route
               element={

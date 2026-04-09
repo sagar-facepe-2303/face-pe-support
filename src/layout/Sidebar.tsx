@@ -11,11 +11,13 @@ import {
 } from "../core/constants/roles";
 import {
   IconAudit,
+  IconCreateAdmin,
   IconDashboard,
   IconHeadset,
   IconKiosk,
   IconLogout,
   IconMerchants,
+  IconProfile,
   IconSettings,
   IconUsers,
   SidebarNavIcon,
@@ -107,12 +109,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <NavLink
             to={ROUTES.SUPPORT_TEAM}
             className={navClass}
+            end
             onClick={onClose}
           >
             <SidebarNavIcon>
               <IconHeadset />
             </SidebarNavIcon>
             <span className="sidebar__text">Support Team</span>
+          </NavLink>
+        ) : null}
+        {role === ROLES.SUPER_ADMIN ? (
+          <NavLink
+            to={ROUTES.SUPPORT_TEAM_CREATE_ADMIN}
+            className={navClass}
+            onClick={onClose}
+          >
+            <SidebarNavIcon>
+              <IconCreateAdmin />
+            </SidebarNavIcon>
+            <span className="sidebar__text">Create Admin</span>
           </NavLink>
         ) : null}
         {canViewAuditLogs(role) ? (
@@ -130,6 +145,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       </nav>
 
       <div className="sidebar__footer">
+        <NavLink to={ROUTES.PROFILE} className={navClass} onClick={onClose}>
+          <SidebarNavIcon>
+            <IconProfile />
+          </SidebarNavIcon>
+          <span className="sidebar__text">Profile</span>
+        </NavLink>
         <button type="button" className="sidebar__link sidebar__link--ghost">
           <SidebarNavIcon>
             <IconSettings />
