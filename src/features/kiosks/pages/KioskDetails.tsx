@@ -1,15 +1,32 @@
-import { useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import { updateMerchantKiosk } from '../../merchants/merchantSlice'
 import { clearKioskDetail, loadKioskDetail } from '../kioskSlice'
+import { ROUTES } from '../../../core/config/routes'
+import { canManageKiosks } from '../../../core/constants/roles'
 import '../../../layout/Layout.css'
 import './KioskDetails.css'
+
+const POLL_MS = 20_000
 
 export function KioskDetails() {
   const { kioskId } = useParams<{ kioskId: string }>()
   const dispatch = useAppDispatch()
+  const user = useAppSelector((s) => s.auth.user)
+  const canMutate = canManageKiosks(user?.role)
+
   const k = useAppSelector((s) => s.kiosks.current)
   const loading = useAppSelector((s) => s.kiosks.loadingDetail)
+  const error = useAppSelector((s) => s.kiosks.error)
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [ekSubmitting, setEkSubmitting] = useState(false)
+  const [ekError, setEkError] = useState<string | null>(null)
+  const [kOnline, setKOnline] = useState(true)
+  const [kFace, setKFace] = useState('')
+  const [kCam, setKCam] = useState('')
+  const [kActive, setKActive] = useState(true)
 
   useEffect(() => {
     if (kioskId) {
@@ -20,11 +37,28 @@ export function KioskDetails() {
     }
   }, [dispatch, kioskId])
 
+  useEffect(() => {
+    if (!kioskId) return
+    const t = window.setInterval(() => {
+      dispatch(loadKioskDetail(kioskId))
+    }, POLL_MS)
+    return () => window.clearInterval(t)
+  }, [dispatch, kioskId])
+
+  useEffect(() => {
+    if (k && editOpen) {
+      setKOnline(k.isOnline)
+      setKFace(k.faceStatus)
+      setKCam(k.cameraStatus)
+      setKActive(true)
+    }
+  }, [k, editOpen])
+
   if (!kioskId) {
     return <p role="alert">Missing kiosk identifier.</p>
   }
 
-  if (loading || !k) {
+  if (loading && !k) {
     return (
       <div className="kiosk-details page-shell">
         <p role="status">Loading kiosk…</p>
@@ -32,183 +66,184 @@ export function KioskDetails() {
     )
   }
 
+  if (error && !k) {
+    return (
+      <div className="kiosk-details page-shell">
+        <p role="alert">{error}</p>
+        <p>
+          <Link to={ROUTES.KIOSKS}>Back to kiosks</Link>
+        </p>
+      </div>
+    )
+  }
+
+  if (!k) {
+    return null
+  }
+
+  async function onEditSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!kioskId || !k) return
+    setEkError(null)
+    setEkSubmitting(true)
+    try {
+      await dispatch(
+        updateMerchantKiosk({
+          merchantId: k.merchantId,
+          kioskId,
+          payload: {
+            is_online: kOnline,
+            face_status: kFace,
+            camera_status: kCam,
+            is_active: kActive,
+          },
+        })
+      ).unwrap()
+      setEditOpen(false)
+    } catch (err) {
+      setEkError(typeof err === 'string' ? err : 'Update failed.')
+    } finally {
+      setEkSubmitting(false)
+    }
+  }
+
   return (
     <div className="kiosk-details page-shell">
       <nav className="kiosk-details__crumb" aria-label="Breadcrumb">
-        {k.breadcrumb}
+        <Link to={ROUTES.KIOSKS}>Kiosks</Link> · <span>{k.serialId}</span>
       </nav>
+      {error ? (
+        <p className="kiosk-details__banner" role="alert">
+          {error}
+        </p>
+      ) : null}
       <header className="kiosk-details__head page-header">
         <div>
           <h1 className="page-title">{k.title}</h1>
           <div className="kiosk-details__badges">
-            <span className="kiosk-details__online">
+            <span className={k.isOnline ? 'kiosk-details__online' : 'kiosk-details__offline-badge'}>
               <span className="kiosk-details__dot" aria-hidden />
-              Online
+              {k.isOnline ? 'Online' : 'Offline'}
             </span>
-            <span className="kiosk-details__place">📍 {k.placeName}</span>
+            <span className="kiosk-details__place">Face · {k.faceStatus}</span>
+            <span className="kiosk-details__place">Camera · {k.cameraStatus}</span>
           </div>
+          <p className="kiosk-details__sync-line">Last sync: {k.lastSync}</p>
         </div>
         <div className="kiosk-details__actions">
-          <button type="button" className="btn btn--secondary btn--sm">
-            Remote reboot
-          </button>
-          <button type="button" className="btn btn--primary btn--sm">
-            Edit config
-          </button>
+          <Link className="btn btn--secondary btn--sm" to={ROUTES.MERCHANT_DETAIL.replace(':merchantId', k.merchantId)}>
+            View merchant
+          </Link>
+          {canMutate ? (
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => setEditOpen(true)}>
+              Edit kiosk
+            </button>
+          ) : null}
         </div>
       </header>
 
       <section className="kiosk-details__health card-surface" aria-labelledby="hw-monitor">
         <div className="kiosk-details__health-head">
           <h2 id="hw-monitor" className="kiosk-details__section-title">
-            Hardware health monitor
+            Device status (API)
           </h2>
-          <span className="kiosk-details__live-tag">Live diagnostics</span>
+          <span className="kiosk-details__live-tag">Refreshes every {POLL_MS / 1000}s</span>
         </div>
         <div className="kiosk-details__health-grid">
           <div>
-            <p className="kiosk-details__metric-label">CPU usage</p>
-            <p className="kiosk-details__metric-value">{k.cpuPct}%</p>
-            <div className="kiosk-details__bar">
-              <span style={{ width: `${k.cpuPct}%` }} />
-            </div>
-            <p className="kiosk-details__metric-hint">Temperature steady at 42°C.</p>
+            <p className="kiosk-details__metric-label">Network</p>
+            <p className="kiosk-details__metric-value">{k.networkStatus}</p>
+            <p className="kiosk-details__metric-hint">Derived from is_online.</p>
           </div>
           <div>
-            <p className="kiosk-details__metric-label">Memory</p>
-            <p className="kiosk-details__metric-value">
-              {k.memoryUsedGb} / {k.memoryTotalGb} GB
-            </p>
-            <div className="kiosk-details__bar">
-              <span
-                style={{
-                  width: `${Math.round((k.memoryUsedGb / k.memoryTotalGb) * 100)}%`,
-                }}
-              />
-            </div>
-            <p className="kiosk-details__metric-hint">Background sync slightly elevated.</p>
+            <p className="kiosk-details__metric-label">Face status</p>
+            <p className="kiosk-details__metric-value kiosk-details__metric-value--ok">{k.faceStatus}</p>
+            <p className="kiosk-details__metric-hint">Reported by kiosk / heartbeat.</p>
           </div>
           <div>
-            <p className="kiosk-details__metric-label">Camera lens</p>
-            <p className="kiosk-details__metric-value kiosk-details__metric-value--ok">{k.cameraStatus}</p>
-            <div className="kiosk-details__bar kiosk-details__bar--ok">
-              <span style={{ width: '98%' }} />
+            <p className="kiosk-details__metric-label">Camera status</p>
+            <p className="kiosk-details__metric-value kiosk-details__metric-value--ok">{k.cameraStatusLabel}</p>
+            <p className="kiosk-details__metric-hint">Mapped from camera_status.</p>
+          </div>
+          <div>
+            <p className="kiosk-details__metric-label">Health score</p>
+            <p className="kiosk-details__metric-value">{k.healthPct}%</p>
+            <div className="kiosk-details__bar">
+              <span style={{ width: `${k.healthPct}%` }} />
             </div>
-            <p className="kiosk-details__metric-hint">Clarity score 98.4%.</p>
+            <p className="kiosk-details__metric-hint">{k.healthLabel}</p>
           </div>
         </div>
       </section>
 
-      <div className="kiosk-details__lower">
-        <section className="kiosk-details__chart card-surface" aria-label="Transaction volume">
-          <header className="kiosk-details__chart-head">
-            <h2 className="kiosk-details__section-title">Transaction volume</h2>
-            <div className="kiosk-details__toggle" role="group" aria-label="Range">
-              <button type="button" className="kiosk-details__toggle-btn kiosk-details__toggle-btn--on">
-                24H
-              </button>
-              <button type="button" className="kiosk-details__toggle-btn">
-                7D
-              </button>
-            </div>
-          </header>
-          <div className="kiosk-details__bars" role="img" aria-label="Hourly volume chart placeholder">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <span
-                key={i}
-                className={i === 4 ? 'kiosk-details__vol kiosk-details__vol--peak' : 'kiosk-details__vol'}
-              />
-            ))}
+      <section className="kiosk-details__spec card-surface" aria-label="Device specifications">
+        <h2 className="kiosk-details__section-title">Identifiers</h2>
+        <dl className="kiosk-details__spec-dl">
+          <div>
+            <dt>Kiosk ID</dt>
+            <dd>{k.id}</dd>
           </div>
-        </section>
-
-        <aside className="kiosk-details__side">
-          <section className="kiosk-details__spec card-surface" aria-label="Device specifications">
-            <h2 className="kiosk-details__section-title">Device specifications</h2>
-            <dl className="kiosk-details__spec-dl">
-              <div>
-                <dt>Model</dt>
-                <dd>{k.model}</dd>
-              </div>
-              <div>
-                <dt>Serial number</dt>
-                <dd>{k.serialNumber}</dd>
-              </div>
-              <div>
-                <dt>OS version</dt>
-                <dd>{k.osVersion}</dd>
-              </div>
-              <div>
-                <dt>Uptime</dt>
-                <dd>{k.uptime}</dd>
-              </div>
-            </dl>
-          </section>
-          <div className="kiosk-details__hardware-visual card-surface" aria-hidden />
-          <section className="kiosk-details__activity card-surface" aria-label="System activity">
-            <header className="kiosk-details__activity-head">
-              <h2 className="kiosk-details__section-title">System activity</h2>
-              <button type="button" className="btn btn--ghost btn--sm">
-                View all
-              </button>
-            </header>
-            <ol className="kiosk-details__timeline">
-              <li>Auth success · edge</li>
-              <li>Manifest update</li>
-              <li>Paper roll low</li>
-              <li>System boot</li>
-            </ol>
-          </section>
-        </aside>
-      </div>
-
-      <section className="kiosk-details__logins card-surface" aria-labelledby="logins-head">
-        <header className="kiosk-details__logins-head">
-          <h2 id="logins-head" className="kiosk-details__section-title">
-            Recent terminal logins
-          </h2>
-        </header>
-        <div className="kiosk-details__table-wrap">
-          <table className="kiosk-details__table">
-            <thead>
-              <tr>
-                <th scope="col">Session ID</th>
-                <th scope="col">User account</th>
-                <th scope="col">Duration</th>
-                <th scope="col">Method</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>SES-8821</td>
-                <td>MH · user</td>
-                <td>3m 12s</td>
-                <td>Face</td>
-                <td>$24.00</td>
-                <td>
-                  <span className="kiosk-details__status-ok">Completed</span>
-                </td>
-              </tr>
-              <tr>
-                <td>SES-8820</td>
-                <td>EP · user</td>
-                <td>—</td>
-                <td>Card</td>
-                <td>$120.00</td>
-                <td>
-                  <span className="kiosk-details__status-bad">Rejected</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div>
+            <dt>Serial</dt>
+            <dd>{k.serialNumber}</dd>
+          </div>
+          <div>
+            <dt>Merchant ID</dt>
+            <dd>
+              <Link to={ROUTES.MERCHANT_DETAIL.replace(':merchantId', k.merchantId)}>{k.merchantId}</Link>
+            </dd>
+          </div>
+          <div>
+            <dt>Model</dt>
+            <dd>{k.model}</dd>
+          </div>
+        </dl>
       </section>
 
-      <button type="button" className="kiosk-details__map-fab" aria-label="Open location map">
-        ⌖
-      </button>
+      <p className="kiosk-details__note">
+        Charts and transaction history are not part of the current Support Portal API handoff; this screen focuses on
+        kiosk status fields returned by <code>GET /kiosks/{"{id}"}</code>.
+      </p>
+
+      {editOpen ? (
+        <div className="kiosk-details__modal-root">
+          <button type="button" className="kiosk-details__backdrop" aria-label="Close" onClick={() => !ekSubmitting && setEditOpen(false)} />
+          <div className="kiosk-details__modal card-surface" role="dialog" aria-modal="true">
+            <h2 className="kiosk-details__modal-title">Edit kiosk</h2>
+            <form onSubmit={onEditSubmit} className="kiosk-details__modal-form">
+              <label className="kiosk-details__check">
+                <input type="checkbox" checked={kOnline} onChange={(e) => setKOnline(e.target.checked)} />
+                Online
+              </label>
+              <label className="kiosk-details__label">
+                Face status
+                <input value={kFace} onChange={(e) => setKFace(e.target.value)} />
+              </label>
+              <label className="kiosk-details__label">
+                Camera status
+                <input value={kCam} onChange={(e) => setKCam(e.target.value)} />
+              </label>
+              <label className="kiosk-details__check">
+                <input type="checkbox" checked={kActive} onChange={(e) => setKActive(e.target.checked)} />
+                Active
+              </label>
+              {ekError ? (
+                <p className="kiosk-details__err" role="alert">
+                  {ekError}
+                </p>
+              ) : null}
+              <div className="kiosk-details__modal-actions">
+                <button type="button" className="btn btn--secondary btn--sm" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn--primary btn--sm" disabled={ekSubmitting}>
+                  {ekSubmitting ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

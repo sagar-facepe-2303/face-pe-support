@@ -6,6 +6,36 @@
   margin-bottom: 0.75rem;
 }
 
+.kiosk-details__crumb a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.kiosk-details__crumb a:hover {
+  text-decoration: underline;
+}
+
+.kiosk-details__crumb span {
+  color: var(--on-surface);
+  font-weight: 600;
+}
+
+.kiosk-details__banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: 0.875rem;
+}
+
+.kiosk-details__sync-line {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
 .kiosk-details__badges {
   display: flex;
   flex-wrap: wrap;
@@ -20,6 +50,18 @@
   gap: 0.35rem;
   font-weight: 600;
   color: #047857;
+}
+
+.kiosk-details__offline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.kiosk-details__offline-badge .kiosk-details__dot {
+  background: var(--error);
 }
 
 .kiosk-details__dot {
@@ -74,7 +116,13 @@
 
 @media (min-width: 48rem) {
   .kiosk-details__health-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 72rem) {
+  .kiosk-details__health-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -331,4 +379,106 @@
 .kiosk-details__map-fab:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
+}
+
+.kiosk-details__note {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin: 1rem 0 2rem;
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+.kiosk-details__note code {
+  font-size: 0.75rem;
+}
+
+.kiosk-details__spec {
+  margin-bottom: 1rem;
+}
+
+.kiosk-details__spec-dl a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.kiosk-details__spec-dl a:hover {
+  text-decoration: underline;
+}
+
+.kiosk-details__modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.kiosk-details__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.kiosk-details__modal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 26rem);
+  padding: 1.25rem;
+}
+
+.kiosk-details__modal-title {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+}
+
+.kiosk-details__modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.kiosk-details__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: var(--label-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.kiosk-details__label input {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+}
+
+.kiosk-details__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kiosk-details__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.kiosk-details__err {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--error);
 }

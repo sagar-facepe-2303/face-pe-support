@@ -1,7 +1,11 @@
 import api from '../../core/api/axios'
+import { parsePagedResponse, type Paged } from '../../core/api/pagination'
+import { formatRelativeTime } from '../../core/utils/helpers'
+import type { KioskApiResponse } from '../merchants/merchantAPI'
 
 export interface KioskRow {
   id: string
+  merchantId: string
   serialId: string
   location: string
   networkStatus: 'ONLINE' | 'OFFLINE'
@@ -14,10 +18,13 @@ export interface KioskDetail extends KioskRow {
   title: string
   breadcrumb: string
   placeName: string
+  faceStatus: string
+  cameraStatus: string
+  isOnline: boolean
   cpuPct: number
   memoryUsedGb: number
   memoryTotalGb: number
-  cameraStatus: string
+  cameraStatusLabel: string
   model: string
   serialNumber: string
   osVersion: string
@@ -35,51 +42,76 @@ export interface KioskHeartbeatResponse {
   server_timestamp: string
 }
 
-export async function fetchKiosks(): Promise<KioskRow[]> {
-  await delay(260)
-  return [
-    {
-      id: 'k1',
-      serialId: 'FP-K-90210',
-      location: 'Dubai Mall, G-Floor',
-      networkStatus: 'ONLINE',
-      healthPct: 100,
-      healthLabel: 'Optimal',
-      lastSync: '2 mins ago',
+export interface ListKiosksParams {
+  page: number
+  pageSize: number
+  q?: string
+  /** "online" | "offline" | "" */
+  network?: string
+}
+
+function deriveHealth(k: KioskApiResponse): { healthPct: number; healthLabel: KioskRow['healthLabel'] } {
+  if (!k.is_online) return { healthPct: 0, healthLabel: 'Disconnected' }
+  const cam = (k.camera_status ?? '').toLowerCase()
+  const face = (k.face_status ?? '').toLowerCase()
+  const camOk = cam.includes('ok') || cam.includes('clear') || cam.includes('good')
+  const faceOk = face.includes('ok') || face.includes('good')
+  if (camOk && faceOk) return { healthPct: 100, healthLabel: 'Optimal' }
+  return { healthPct: 68, healthLabel: 'Slow Response' }
+}
+
+function mapKioskResponseToRow(k: KioskApiResponse): KioskRow {
+  const { healthPct, healthLabel } = deriveHealth(k)
+  const ts = k.last_heartbeat_at ?? k.updated_at
+  return {
+    id: k.id,
+    merchantId: k.merchant_id,
+    serialId: k.serial_id,
+    location: k.serial_id,
+    networkStatus: k.is_online ? 'ONLINE' : 'OFFLINE',
+    healthPct,
+    healthLabel,
+    lastSync: formatRelativeTime(ts),
+  }
+}
+
+export async function fetchKiosksPaged(params: ListKiosksParams): Promise<Paged<KioskRow>> {
+  const { page, pageSize, q, network } = params
+  const response = await api.get<unknown>('/kiosks', {
+    params: {
+      page,
+      page_size: pageSize,
+      ...(q?.trim() ? { q: q.trim() } : {}),
+      ...(network === 'online' ? { is_online: true } : {}),
+      ...(network === 'offline' ? { is_online: false } : {}),
     },
-    {
-      id: 'k2',
-      serialId: 'FP-K-77102',
-      location: 'Changi Airport, T4',
-      networkStatus: 'OFFLINE',
-      healthPct: 42,
-      healthLabel: 'Disconnected',
-      lastSync: '14 mins ago',
-    },
-  ]
+  })
+  return parsePagedResponse(response.data, (raw) => mapKioskResponseToRow(raw as KioskApiResponse))
 }
 
 export async function fetchKioskById(id: string): Promise<KioskDetail> {
-  await delay(220)
+  const response = await api.get<KioskApiResponse>(`/kiosks/${id}`)
+  const k = response.data
+  const row = mapKioskResponseToRow(k)
+  const { healthPct, healthLabel } = deriveHealth(k)
   return {
-    id,
-    serialId: 'KSK-9920-ALPHA',
-    location: 'Changi Airport, Singapore',
-    networkStatus: 'ONLINE',
-    healthPct: 98,
-    healthLabel: 'Optimal',
-    lastSync: 'Just now',
-    title: 'Alpha Hub - Terminal 4',
-    breadcrumb: 'KIOSKS > KSK-9920-ALPHA',
-    placeName: 'Changi Airport, Singapore',
-    cpuPct: 24,
+    ...row,
+    healthPct,
+    healthLabel,
+    title: `Kiosk ${k.serial_id}`,
+    breadcrumb: `Kiosks · ${k.serial_id}`,
+    placeName: k.serial_id,
+    faceStatus: k.face_status,
+    cameraStatus: k.camera_status,
+    isOnline: k.is_online,
+    cpuPct: k.is_online ? 24 : 0,
     memoryUsedGb: 4.2,
     memoryTotalGb: 8,
-    cameraStatus: 'Clear',
-    model: 'FacePe Terminal X1',
-    serialNumber: 'SN-ALPHA-9920',
-    osVersion: 'FacePe OS 4.2',
-    uptime: '18d 4h',
+    cameraStatusLabel: k.camera_status,
+    model: 'FacePe Terminal',
+    serialNumber: k.serial_id,
+    osVersion: '—',
+    uptime: '—',
   }
 }
 
@@ -89,8 +121,4 @@ export async function sendKioskHeartbeat(
 ): Promise<KioskHeartbeatResponse> {
   const response = await api.post<KioskHeartbeatResponse>(`/kiosks/${kioskId}/heartbeat`, payload)
   return response.data
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
