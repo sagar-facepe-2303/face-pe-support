@@ -13,7 +13,7 @@ import {
 import { ROUTES } from '../../../core/config/routes'
 import { canManageMerchants } from '../../../core/constants/roles'
 import { formatDisplayDate } from '../../../core/utils/helpers'
-import type { MerchantKioskRow } from '../merchantAPI'
+import { buildCreateKioskPayload, type MerchantKioskRow } from '../merchantAPI'
 import '../../../layout/Layout.css'
 import './MerchantDetails.css'
 
@@ -107,7 +107,7 @@ export function MerchantDetails() {
           merchantId,
           payload: {
             merchant_name: editName.trim(),
-            contact_email: editEmail.trim(),
+            merchant_email: editEmail.trim(),
             ...(editPhone.trim() ? { contact_phone: editPhone.trim() } : {}),
             is_active: editActive,
           },
@@ -130,12 +130,7 @@ export function MerchantDetails() {
       await dispatch(
         createMerchantKiosk({
           merchantId,
-          payload: {
-            serial_id: kSerial.trim(),
-            is_online: kOnline,
-            face_status: kFace.trim() || 'ok',
-            camera_status: kCam.trim() || 'ok',
-          },
+          payload: buildCreateKioskPayload(kSerial.trim(), kOnline, kFace, kCam),
         })
       ).unwrap()
       setKioskOpen(false)

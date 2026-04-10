@@ -285,6 +285,46 @@
   color: var(--on-error-container);
 }
 
+.kiosk-list__banner--info {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  border: 1px solid var(--border);
+}
+
+.kiosk-list__banner--warn {
+  background: rgba(180, 83, 9, 0.12);
+  color: #92400e;
+}
+
+.kiosk-list__scope {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.kiosk-list__scope-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 28rem;
+}
+
+.kiosk-list__scope-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.kiosk-list__scope-hint code {
+  font-size: 0.75rem;
+}
+
+.kiosk-list__modal-hint {
+  margin: -0.35rem 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .kiosk-list__toolbar {
   display: grid;
   grid-template-columns: 1fr;
@@ -391,4 +431,20 @@
   margin: 0;
   font-size: 0.8125rem;
   color: var(--error);
+}
+
+.kiosk-list__scoped-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kiosk-list__scoped-value {
+  margin: 0;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.kiosk-list__banner code {
+  font-size: 0.75rem;
 }

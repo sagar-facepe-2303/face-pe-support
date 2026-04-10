@@ -26,23 +26,31 @@ interface LoginResponseShape {
     name?: string
     role: Role
     is_active?: boolean
+    merchant_id?: string
+    merchant_name?: string
   }
   id?: string
   email?: string
   name?: string
   role?: Role
   is_active?: boolean
+  merchant_id?: string
+  merchant_name?: string
 }
 
-function normalizeUser(raw: LoginResponseShape['user']): AuthUser {
+function normalizeUser(raw: LoginResponseShape['user'], root?: LoginResponseShape): AuthUser {
   if (!raw) {
     throw new Error('Login response missing user profile')
   }
+  const merchantId = raw.merchant_id ?? root?.merchant_id
+  const merchantName = raw.merchant_name ?? root?.merchant_name
   return {
     id: raw.id ?? raw.email,
     email: raw.email,
     name: raw.name ?? raw.email.split('@')[0],
     role: raw.role,
+    ...(merchantId ? { merchantId } : {}),
+    ...(merchantName ? { merchantName } : {}),
   }
 }
 
@@ -69,7 +77,7 @@ export async function loginRequest(payload: LoginPayload): Promise<{
       : undefined)
 
   return {
-    user: normalizeUser(userPayload),
+    user: normalizeUser(userPayload, body),
     token: body.access_token,
     refreshToken: body.refresh_token,
   }

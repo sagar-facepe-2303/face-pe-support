@@ -34,6 +34,8 @@ export function MerchantList() {
   const [formCode, setFormCode] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formPhone, setFormPhone] = useState('')
+  const [formMerchantId, setFormMerchantId] = useState('')
+  const [createdPortalMerchantId, setCreatedPortalMerchantId] = useState<string | null>(null)
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -61,19 +63,24 @@ export function MerchantList() {
     setCreateError(null)
     setCreateSubmitting(true)
     try {
-      await dispatch(
+      const created = await dispatch(
         createMerchant({
           merchant_name: formName.trim(),
           merchant_code: formCode.trim(),
-          contact_email: formEmail.trim(),
+          merchant_email: formEmail.trim(),
           ...(formPhone.trim() ? { contact_phone: formPhone.trim() } : {}),
+          ...(formMerchantId.trim() ? { merchant_id: formMerchantId.trim() } : {}),
         })
       ).unwrap()
+      if (created?.id) {
+        setCreatedPortalMerchantId(created.id)
+      }
       setCreateOpen(false)
       setFormName('')
       setFormCode('')
       setFormEmail('')
       setFormPhone('')
+      setFormMerchantId('')
     } catch (err) {
       setCreateError(typeof err === 'string' ? err : 'Could not create merchant.')
     } finally {
@@ -132,6 +139,34 @@ export function MerchantList() {
         <p className="merchant-list__banner merchant-list__banner--error" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {createdPortalMerchantId ? (
+        <div className="merchant-list__banner merchant-list__banner--success card-surface" role="status">
+          <p className="merchant-list__success-title">
+            <strong>Merchant saved.</strong> Register kiosks with this Support Portal merchant <strong>id</strong> (the
+            value in <code>POST /merchants/{"{this id}"}/kiosks</code>):
+          </p>
+          <div className="merchant-list__portal-id-row">
+            <code className="merchant-list__portal-id">{createdPortalMerchantId}</code>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => {
+                void navigator.clipboard.writeText(createdPortalMerchantId)
+              }}
+            >
+              Copy id
+            </button>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCreatedPortalMerchantId(null)}>
+              Dismiss
+            </button>
+          </div>
+          <p className="merchant-list__field-hint">
+            If kiosk registration says &quot;Merchant not found&quot;, the id in the form does not match any merchant row
+            in this environment—use the id above, or create the merchant here first.
+          </p>
+        </div>
       ) : null}
 
       <section className="merchant-list__stats" aria-label="Merchant summary">
@@ -325,7 +360,7 @@ export function MerchantList() {
                 />
               </label>
               <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Contact email</span>
+                <span className="merchant-list__field-label">Merchant email</span>
                 <input
                   className="merchant-list__input"
                   type="email"
@@ -342,6 +377,19 @@ export function MerchantList() {
                   onChange={(e) => setFormPhone(e.target.value)}
                 />
               </label>
+              <label className="merchant-list__field">
+                <span className="merchant-list__field-label">Merchant ID (optional)</span>
+                <input
+                  className="merchant-list__input"
+                  value={formMerchantId}
+                  onChange={(e) => setFormMerchantId(e.target.value)}
+                  placeholder="Plain UUID, urn:uuid:…, code, or any string your API accepts"
+                  autoComplete="off"
+                />
+              </label>
+              <p className="merchant-list__field-hint">
+                Sent as <code>merchant_id</code> only if filled. Use whatever format your backend expects.
+              </p>
               {createError ? (
                 <p className="merchant-list__banner merchant-list__banner--error" role="alert">
                   {createError}

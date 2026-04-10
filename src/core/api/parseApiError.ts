@@ -33,6 +33,13 @@ export function getApiErrorMessage(error: unknown): string {
     }
   }
 
+  if (data && typeof data === 'object' && 'message' in data) {
+    const message = (data as { message: unknown }).message
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
+  }
+
   if (error.response?.status === 422) {
     return 'Request could not be processed. Check the form and try again.'
   }

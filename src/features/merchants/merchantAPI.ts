@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import api from '../../core/api/axios'
 import { parsePagedResponse, type Paged } from '../../core/api/pagination'
 import { formatRelativeTime } from '../../core/utils/helpers'
@@ -7,7 +8,9 @@ export interface MerchantResponse {
   id: string
   merchant_name: string
   merchant_code: string
-  contact_email: string
+  /** Primary email field from API */
+  merchant_email?: string
+  contact_email?: string
   contact_phone?: string | null
   status?: string | null
   is_active?: boolean | null
@@ -54,14 +57,16 @@ export interface MerchantKioskRow {
 export interface CreateMerchantRequest {
   merchant_name: string
   merchant_code: string
-  contact_email: string
+  merchant_email: string
   contact_phone?: string
   status?: string
+  /** Any string the API accepts (uuid, urn:uuid:…, code, etc.) */
+  merchant_id?: string
 }
 
 export interface UpdateMerchantRequest {
   merchant_name?: string
-  contact_email?: string
+  merchant_email?: string
   contact_phone?: string
   status?: string
   is_active?: boolean
@@ -70,8 +75,28 @@ export interface UpdateMerchantRequest {
 export interface CreateKioskRequest {
   serial_id: string
   is_online: boolean
-  face_status: string
-  camera_status: string
+  face_status: string | boolean
+  camera_status: string | boolean
+}
+
+/** Maps UI strings/checkbox-style input to API payload (supports boolean columns). */
+export function buildCreateKioskPayload(
+  serial_id: string,
+  is_online: boolean,
+  faceInput: string,
+  cameraInput: string
+): CreateKioskRequest {
+  return {
+    serial_id,
+    is_online,
+    face_status: normalizeKioskFlag(faceInput),
+    camera_status: normalizeKioskFlag(cameraInput),
+  }
+}
+
+function normalizeKioskFlag(input: string): boolean {
+  const s = input.trim().toLowerCase()
+  return s === 'ok' || s === 'true' || s === '1' || s === 'yes' || s === 'good'
 }
 
 export interface UpdateKioskRequest {
@@ -86,8 +111,9 @@ export interface KioskApiResponse {
   merchant_id: string
   serial_id: string
   is_online: boolean
-  face_status: string
-  camera_status: string
+  /** API may return strings or booleans (DB uses booleans). */
+  face_status: string | boolean
+  camera_status: string | boolean
   is_active?: boolean | null
   updated_at?: string | null
   last_heartbeat_at?: string | null
@@ -116,7 +142,7 @@ function mapMerchantResponseToRow(m: MerchantResponse): MerchantRow {
     name: m.merchant_name,
     category: m.merchant_code,
     location: m.contact_phone?.trim() ? m.contact_phone : '—',
-    email: m.contact_email,
+    email: m.merchant_email ?? m.contact_email ?? '—',
     status: mapMerchantStatus(m),
     registeredAt,
   }
@@ -138,6 +164,11 @@ export function mapMerchantToDetail(m: MerchantResponse): MerchantDetail {
   }
 }
 
+function kioskStatusToLabel(v: string | boolean): string {
+  if (typeof v === 'boolean') return v ? 'ok' : 'fail'
+  return String(v ?? '')
+}
+
 function mapKioskToMerchantRow(k: KioskApiResponse): MerchantKioskRow {
   const ts = k.last_heartbeat_at ?? k.updated_at
   const batteryPct = k.is_online ? 100 : 0
@@ -148,8 +179,8 @@ function mapKioskToMerchantRow(k: KioskApiResponse): MerchantKioskRow {
     serialId: k.serial_id,
     locationName: k.serial_id,
     isOnline: k.is_online,
-    faceStatus: k.face_status,
-    cameraStatus: k.camera_status,
+    faceStatus: kioskStatusToLabel(k.face_status),
+    cameraStatus: kioskStatusToLabel(k.camera_status),
     isActive,
     lastSync: formatRelativeTime(ts),
     batteryPct,
@@ -159,15 +190,28 @@ function mapKioskToMerchantRow(k: KioskApiResponse): MerchantKioskRow {
 
 export async function fetchMerchantsPaged(params: ListMerchantsParams): Promise<Paged<MerchantRow>> {
   const { page, pageSize, q, status } = params
-  const response = await api.get<unknown>('/merchants', {
-    params: {
-      page,
-      page_size: pageSize,
-      ...(q?.trim() ? { q: q.trim() } : {}),
-      ...(status?.trim() ? { status: status.trim() } : {}),
-    },
-  })
-  return parsePagedResponse(response.data, (raw) => mapMerchantResponseToRow(raw as MerchantResponse))
+  try {
+    const response = await api.get<unknown>('/merchants', {
+      params: {
+        page,
+        page_size: pageSize,
+        ...(q?.trim() ? { q: q.trim() } : {}),
+        ...(status?.trim() ? { status: status.trim() } : {}),
+      },
+    })
+    return parsePagedResponse(response.data, (raw) => mapMerchantResponseToRow(raw as MerchantResponse))
+  } catch (e) {
+    if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
+      return {
+        items: [],
+        page,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+      }
+    }
+    throw e
+  }
 }
 
 export async function fetchMerchantById(id: string): Promise<MerchantDetail> {
@@ -175,19 +219,42 @@ export async function fetchMerchantById(id: string): Promise<MerchantDetail> {
   return mapMerchantToDetail(response.data)
 }
 
-export async function fetchMerchantKiosks(merchantId: string): Promise<MerchantKioskRow[]> {
-  const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`)
-  const data = response.data
+function parseKioskListPayload(data: unknown): KioskApiResponse[] {
   if (Array.isArray(data)) {
-    return data.map((x) => mapKioskToMerchantRow(x as KioskApiResponse))
+    return data as KioskApiResponse[]
   }
   if (data && typeof data === 'object' && 'items' in data) {
     const items = (data as { items: unknown }).items
     if (Array.isArray(items)) {
-      return items.map((x) => mapKioskToMerchantRow(x as KioskApiResponse))
+      return items as KioskApiResponse[]
     }
   }
   return []
+}
+
+export async function fetchMerchantKiosks(merchantId: string): Promise<MerchantKioskRow[]> {
+  try {
+    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`)
+    return parseKioskListPayload(response.data).map((x) => mapKioskToMerchantRow(x))
+  } catch (e) {
+    if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
+      return []
+    }
+    throw e
+  }
+}
+
+/** Raw kiosk rows for fleet mapping (same endpoint as fetchMerchantKiosks). */
+export async function fetchMerchantKiosksRaw(merchantId: string): Promise<KioskApiResponse[]> {
+  try {
+    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`)
+    return parseKioskListPayload(response.data)
+  } catch (e) {
+    if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
+      return []
+    }
+    throw e
+  }
 }
 
 export async function createMerchant(payload: CreateMerchantRequest): Promise<MerchantResponse> {

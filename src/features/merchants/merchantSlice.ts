@@ -86,9 +86,10 @@ export const createMerchant = createAsyncThunk(
   'merchants/create',
   async (payload: CreateMerchantRequest, { dispatch, getState, rejectWithValue }) => {
     try {
-      await merchantAPI.createMerchant(payload)
+      const created = await merchantAPI.createMerchant(payload)
       const { lastListParams } = (getState() as RootState).merchants
       await dispatch(loadMerchants(lastListParams)).unwrap()
+      return created
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }

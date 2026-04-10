@@ -59,9 +59,10 @@ export const loadKiosks = createAsyncThunk<Paged<KioskRow>, ListKiosksParams | u
 
 export const loadKioskDetail = createAsyncThunk(
   'kiosks/loadDetail',
-  async (id: string, { rejectWithValue }) => {
+  async (id: string, { getState, rejectWithValue }) => {
     try {
-      return await kioskAPI.fetchKioskById(id)
+      const merchantScopeId = (getState() as RootState).auth.user?.merchantId
+      return await kioskAPI.fetchKioskById(id, merchantScopeId ?? null)
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }
