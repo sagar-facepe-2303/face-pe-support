@@ -28,6 +28,17 @@ export interface UserTransactionRow {
   status: 'SUCCESS' | 'FAILED'
 }
 
+/** Shape from `GET /users/{user_id}` (see `USER_API_GUIDE.md`). */
+export interface UserResponse {
+  id: string
+  user_name?: string | null
+  user_email?: string | null
+  user_phone?: string | null
+  status?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export type OtpPurpose = 'read_user' | 'update_user' | 'delete_user'
 
 export interface SendOtpRequest {
@@ -38,6 +49,8 @@ export interface SendOtpRequest {
 export interface SendOtpResponse {
   session_id: string
   expires_at: string
+  delivery_method?: string
+  masked_recipient?: string
 }
 
 export interface VerifyOtpRequest {
@@ -46,8 +59,12 @@ export interface VerifyOtpRequest {
 }
 
 export interface VerifyOtpResponse {
-  otp_token: string
-  expires_at: string
+  token?: string
+  otp_token?: string
+  token_type?: string
+  expires_at?: string
+  target_type?: string
+  target_id?: string
 }
 
 export interface UpdateUserRequest {
@@ -56,9 +73,37 @@ export interface UpdateUserRequest {
   user_phone?: string
 }
 
+function mapUserStatus(s: string | null | undefined): PlatformUserDetail['status'] {
+  const lower = (s ?? '').toLowerCase()
+  if (lower.includes('suspend')) return 'SUSPENDED'
+  if (lower.includes('pend')) return 'PENDING'
+  return 'ACTIVE'
+}
+
+export function mapUserResponseToDetail(r: UserResponse): PlatformUserDetail {
+  const name = r.user_name?.trim() || '—'
+  const email = r.user_email?.trim() || '—'
+  const phone = r.user_phone?.trim() || '—'
+  const createdAt = r.created_at ?? r.updated_at ?? new Date().toISOString()
+  return {
+    id: r.id,
+    name,
+    email,
+    status: mapUserStatus(r.status),
+    createdAt,
+    userCode: `FP-${r.id.replace(/-/g, '').slice(0, 8)}`,
+    phone,
+    lastLogin: '—',
+    totalSpent: 0,
+    spentTrend: '—',
+    failedTransactions: 0,
+    totalTransactions: 0,
+    supportRequestsOpen: 0,
+  }
+}
+
 export async function fetchUsers(): Promise<PlatformUserRow[]> {
-  // User list endpoint is not part of current backend contract in handoff doc.
-  // Keep existing list data for the directory grid.
+  // User list is not wired to `GET /users` in the current contract; grid uses local data.
   await delay(240)
   return [
     {
@@ -85,74 +130,44 @@ export async function fetchUsers(): Promise<PlatformUserRow[]> {
   ]
 }
 
-export async function fetchUserById(id: string): Promise<{
-  user: PlatformUserDetail
-  transactions: UserTransactionRow[]
-}> {
-  // Profile detail route exists in backend and requires OTP scope token.
-  // For current screen we keep local activity table plus backend-ready user call helper below.
-  await delay(230)
-  const user: PlatformUserDetail = {
-    id,
-    name: 'Marcus Holloway',
-    email: 'marcus.h@email.com',
-    status: 'ACTIVE',
-    createdAt: '2023-08-02',
-    userCode: 'FP-8829-01',
-    phone: '+1 (415) 555-0142',
-    lastLogin: 'Today, 09:14',
-    totalSpent: 14290.5,
-    spentTrend: '+12%',
-    failedTransactions: 3,
-    totalTransactions: 128,
-    supportRequestsOpen: 1,
-  }
-  const transactions: UserTransactionRow[] = [
-    {
-      reference: 'TX-88291',
-      merchant: 'Skyline Cafe',
-      date: '2024-03-28',
-      amount: 24.5,
-      status: 'SUCCESS',
-    },
-    {
-      reference: 'TX-88288',
-      merchant: 'Harbor Air',
-      date: '2024-03-27',
-      amount: 210,
-      status: 'FAILED',
-    },
-  ]
-  return { user, transactions }
+/**
+ * `GET /users/{user_id}` — requires `Authorization` and `X-OTP-Token` with `read_user` scope per API guide.
+ */
+export async function fetchUserProfile(
+  userId: string,
+  otpToken?: string | null
+): Promise<{ user: PlatformUserDetail; transactions: UserTransactionRow[] }> {
+  const response = await api.get<UserResponse>(`/users/${userId}`, {
+    ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+  })
+  const user = mapUserResponseToDetail(response.data)
+  return { user, transactions: [] }
 }
 
-export async function getUserById(userId: string, otpToken: string): Promise<unknown> {
-  const response = await api.get(`/users/${userId}`, {
-    headers: {
-      'X-OTP-Token': otpToken,
-    },
+/** @deprecated Use `fetchUserProfile` */
+export async function getUserById(userId: string, otpToken: string): Promise<UserResponse> {
+  const response = await api.get<UserResponse>(`/users/${userId}`, {
+    headers: { 'X-OTP-Token': otpToken },
   })
   return response.data
 }
 
+/** `PUT /users/{user_id}` — OTP scope `update_user`. */
 export async function updateUserById(
   userId: string,
   payload: UpdateUserRequest,
   otpToken: string
-): Promise<unknown> {
-  const response = await api.put(`/users/${userId}`, payload, {
-    headers: {
-      'X-OTP-Token': otpToken,
-    },
+): Promise<UserResponse> {
+  const response = await api.put<UserResponse>(`/users/${userId}`, payload, {
+    headers: { 'X-OTP-Token': otpToken },
   })
   return response.data
 }
 
+/** `DELETE /users/{user_id}` — OTP scope `delete_user`; API returns 204. */
 export async function deleteUserById(userId: string, otpToken: string): Promise<void> {
   await api.delete(`/users/${userId}`, {
-    headers: {
-      'X-OTP-Token': otpToken,
-    },
+    headers: { 'X-OTP-Token': otpToken },
   })
 }
 
@@ -161,9 +176,20 @@ export async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse>
   return response.data
 }
 
+/** `POST /otp/send` with a user `purpose` and `target_user_id`. */
+export async function sendUserOtp(purpose: OtpPurpose, targetUserId: string): Promise<SendOtpResponse> {
+  return sendOtp({ purpose, target_user_id: targetUserId })
+}
+
 export async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> {
   const response = await api.post<VerifyOtpResponse>('/otp/verify', payload)
   return response.data
+}
+
+/** Returns the scoped token for `X-OTP-Token` (accepts `token` or legacy `otp_token`). */
+export async function verifyUserOtpAndGetToken(sessionId: string, code: string): Promise<string> {
+  const d = await verifyOtp({ session_id: sessionId, code })
+  return (d.token ?? d.otp_token ?? '').trim()
 }
 
 function delay(ms: number): Promise<void> {

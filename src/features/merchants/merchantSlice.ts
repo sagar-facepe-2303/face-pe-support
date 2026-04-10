@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { isAxiosError } from 'axios'
 import type { RootState } from '../../app/store'
 import { getApiErrorMessage } from '../../core/api/parseApiError'
 import * as merchantAPI from './merchantAPI'
@@ -21,6 +22,12 @@ export interface MerchantListMeta {
   totalPages: number
 }
 
+export interface MerchantDetailRejected {
+  message: string
+  /** Present when GET /merchants/{id} failed with 401/403 and OTP may be required */
+  httpStatus?: number
+}
+
 interface MerchantState {
   list: MerchantRow[]
   listMeta: MerchantListMeta
@@ -30,6 +37,8 @@ interface MerchantState {
   loadingList: boolean
   loadingDetail: boolean
   error: string | null
+  /** Set when loadMerchantDetail fails; used to offer read_merchant OTP (401/403). */
+  detailLoadHttpStatus: number | null
 }
 
 const defaultListParams: ListMerchantsParams = {
@@ -53,6 +62,7 @@ const initialState: MerchantState = {
   loadingList: false,
   loadingDetail: false,
   error: null,
+  detailLoadHttpStatus: null,
 }
 
 export const loadMerchants = createAsyncThunk<Paged<MerchantRow>, ListMerchantsParams | undefined>(
@@ -69,15 +79,22 @@ export const loadMerchants = createAsyncThunk<Paged<MerchantRow>, ListMerchantsP
 
 export const loadMerchantDetail = createAsyncThunk(
   'merchants/loadDetail',
-  async (id: string, { rejectWithValue }) => {
+  async (
+    arg: string | { id: string; otpToken?: string | null },
+    { rejectWithValue }
+  ) => {
+    const id = typeof arg === 'string' ? arg : arg.id
+    const otpToken = typeof arg === 'string' ? undefined : arg.otpToken
     try {
-      const [detail, kiosks] = await Promise.all([
-        merchantAPI.fetchMerchantById(id),
-        merchantAPI.fetchMerchantKiosks(id),
-      ])
-      return { detail, kiosks }
+      const { detail, kiosks } = await merchantAPI.fetchMerchantById(id, otpToken)
+      const kiosksFinal =
+        kiosks.length > 0 ? kiosks : await merchantAPI.fetchMerchantKiosks(id, otpToken).catch(() => [])
+      return { detail, kiosks: kiosksFinal }
     } catch (e) {
-      return rejectWithValue(getApiErrorMessage(e))
+      return rejectWithValue({
+        message: getApiErrorMessage(e),
+        httpStatus: isAxiosError(e) ? e.response?.status : undefined,
+      } satisfies MerchantDetailRejected)
     }
   }
 )
@@ -182,6 +199,7 @@ const merchantSlice = createSlice({
     clearMerchantDetail(state) {
       state.current = null
       state.kiosks = []
+      state.detailLoadHttpStatus = null
     },
   },
   extraReducers: (builder) => {
@@ -209,17 +227,27 @@ const merchantSlice = createSlice({
       .addCase(loadMerchantDetail.pending, (state) => {
         state.loadingDetail = true
         state.error = null
+        state.detailLoadHttpStatus = null
       })
       .addCase(loadMerchantDetail.fulfilled, (state, action) => {
         state.loadingDetail = false
         state.current = action.payload.detail
         state.kiosks = action.payload.kiosks
+        state.detailLoadHttpStatus = null
       })
       .addCase(loadMerchantDetail.rejected, (state, action) => {
         state.loadingDetail = false
         state.current = null
         state.kiosks = []
-        state.error = (action.payload as string) ?? 'Error'
+        const p = action.payload as MerchantDetailRejected | string | undefined
+        if (p && typeof p === 'object' && 'message' in p) {
+          state.error = p.message
+          state.detailLoadHttpStatus =
+            typeof p.httpStatus === 'number' ? p.httpStatus : null
+        } else {
+          state.error = typeof p === 'string' ? p : 'Error'
+          state.detailLoadHttpStatus = null
+        }
       })
   },
 })

@@ -10,11 +10,14 @@ import {
   updateMerchantKiosk,
   updateMerchantRecord,
 } from '../merchantSlice'
+import * as merchantAPI from '../merchantAPI'
+import type { MerchantKioskRow } from '../merchantAPI'
 import { ROUTES } from '../../../core/config/routes'
 import { canManageMerchants } from '../../../core/constants/roles'
 import { formatDisplayDate } from '../../../core/utils/helpers'
-import { buildCreateKioskPayload, type MerchantKioskRow } from '../merchantAPI'
+import { getApiErrorMessage } from '../../../core/api/parseApiError'
 import '../../../layout/Layout.css'
+import './MerchantList.css'
 import './MerchantDetails.css'
 
 export function MerchantDetails() {
@@ -28,6 +31,13 @@ export function MerchantDetails() {
   const kiosks = useAppSelector((s) => s.merchants.kiosks)
   const loading = useAppSelector((s) => s.merchants.loadingDetail)
   const error = useAppSelector((s) => s.merchants.error)
+  const detailLoadHttpStatus = useAppSelector((s) => s.merchants.detailLoadHttpStatus)
+
+  const [otpSessionId, setOtpSessionId] = useState<string | null>(null)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpSending, setOtpSending] = useState(false)
+  const [otpVerifying, setOtpVerifying] = useState(false)
+  const [otpLocalError, setOtpLocalError] = useState<string | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
   const [editSubmitting, setEditSubmitting] = useState(false)
@@ -81,6 +91,105 @@ export function MerchantDetails() {
     )
   }
 
+  const needsMerchantReadOtp =
+    Boolean(error && !merchant && (detailLoadHttpStatus === 401 || detailLoadHttpStatus === 403))
+
+  async function sendReadOtp() {
+    if (!merchantId) return
+    setOtpSending(true)
+    setOtpLocalError(null)
+    try {
+      const r = await merchantAPI.sendMerchantReadOtp(merchantId)
+      setOtpSessionId(r.session_id)
+    } catch (err) {
+      setOtpLocalError(getApiErrorMessage(err))
+    } finally {
+      setOtpSending(false)
+    }
+  }
+
+  async function verifyOtpAndReload() {
+    if (!merchantId || !otpSessionId) {
+      setOtpLocalError('Send a verification code first.')
+      return
+    }
+    const code = otpCode.trim()
+    if (!code) {
+      setOtpLocalError('Enter the code from your email.')
+      return
+    }
+    setOtpVerifying(true)
+    setOtpLocalError(null)
+    try {
+      const token = await merchantAPI.verifyOtpAndGetToken(otpSessionId, code)
+      if (!token) {
+        setOtpLocalError('Verification did not return a token. Try again.')
+        return
+      }
+      await dispatch(loadMerchantDetail({ id: merchantId, otpToken: token })).unwrap()
+      setOtpSessionId(null)
+      setOtpCode('')
+    } catch (err) {
+      setOtpLocalError(getApiErrorMessage(err))
+    } finally {
+      setOtpVerifying(false)
+    }
+  }
+
+  if (needsMerchantReadOtp) {
+    return (
+      <div className="merchant-details page-shell">
+        <nav className="merchant-details__crumb" aria-label="Breadcrumb">
+          <Link to={ROUTES.MERCHANTS}>Merchants</Link>
+        </nav>
+        <p className="merchant-details__banner" role="alert">
+          {error}
+        </p>
+        <p className="merchant-details__otp-intro">
+          The Support Portal requires a one-time email code to <strong>read</strong> merchant details (this is separate
+          from logging in). Super admin and merchant admin still need this step when the API returns 401/403 on{' '}
+          <code>GET /merchants/{"{id}"}</code>.
+        </p>
+        <div className="merchant-list__otp card-surface" role="region" aria-label="Verify merchant access">
+          <p className="merchant-list__otp-title">Verify access</p>
+          <div className="merchant-list__otp-actions">
+            <button type="button" className="btn btn--secondary btn--sm" disabled={otpSending} onClick={() => void sendReadOtp()}>
+              {otpSending ? 'Sending…' : 'Send code'}
+            </button>
+            <input
+              className="merchant-list__input"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="6-digit code"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={otpVerifying}
+              onClick={() => void verifyOtpAndReload()}
+            >
+              {otpVerifying ? 'Verifying…' : 'Verify & load'}
+            </button>
+          </div>
+          {otpSessionId ? (
+            <p className="merchant-list__field-hint">Code sent. Check your email and enter the code above.</p>
+          ) : null}
+          {otpLocalError ? (
+            <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+              {otpLocalError}
+            </p>
+          ) : null}
+        </div>
+        <p>
+          <Link to={ROUTES.MERCHANTS}>Back to merchants</Link>
+        </p>
+      </div>
+    )
+  }
+
   if (error && !merchant) {
     return (
       <div className="merchant-details page-shell">
@@ -108,7 +217,7 @@ export function MerchantDetails() {
           payload: {
             merchant_name: editName.trim(),
             merchant_email: editEmail.trim(),
-            ...(editPhone.trim() ? { contact_phone: editPhone.trim() } : {}),
+            ...(editPhone.trim() ? { merchant_phone: editPhone.trim() } : {}),
             is_active: editActive,
           },
         })
@@ -130,7 +239,7 @@ export function MerchantDetails() {
       await dispatch(
         createMerchantKiosk({
           merchantId,
-          payload: buildCreateKioskPayload(kSerial.trim(), kOnline, kFace, kCam),
+          payload: merchantAPI.buildCreateKioskPayload(kSerial.trim(), kOnline, kFace, kCam),
         })
       ).unwrap()
       setKioskOpen(false)
@@ -214,7 +323,7 @@ export function MerchantDetails() {
         <div>
           <h1 className="page-title">{merchant.name}</h1>
           <p className="merchant-details__sub">
-            Merchant code: <strong>{merchant.registrationNumber}</strong>
+            Merchant ref: <strong>{merchant.registrationNumber}</strong>
           </p>
         </div>
         <div className="merchant-details__actions">
@@ -252,7 +361,7 @@ export function MerchantDetails() {
               <dd>{merchant.legalEntity}</dd>
             </div>
             <div>
-              <dt>Registration / code</dt>
+              <dt>Merchant ID (external)</dt>
               <dd>{merchant.registrationNumber}</dd>
             </div>
             <div>

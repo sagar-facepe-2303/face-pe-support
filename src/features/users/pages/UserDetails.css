@@ -6,6 +6,39 @@
   margin-bottom: 0.75rem;
 }
 
+.user-details__crumb a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.user-details__crumb a:hover {
+  text-decoration: underline;
+}
+
+.user-details__banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+.user-details__otp-intro {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 40rem;
+}
+
+.user-details__empty-tx {
+  padding: 1rem 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
 .user-details__actions {
   display: flex;
   flex-wrap: wrap;

@@ -1,113 +1,173 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector, useDebouncedValue } from '../../../app/hooks'
-import { createMerchant, loadMerchants, removeMerchant } from '../merchantSlice'
-import { ROUTES } from '../../../core/config/routes'
-import { canManageMerchants } from '../../../core/constants/roles'
-import { formatDisplayDate } from '../../../core/utils/helpers'
-import { MerchantCard } from '../components/MerchantCard'
-import '../../../layout/Layout.css'
-import './MerchantList.css'
-
-const PAGE_SIZE = 20
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { isAxiosError } from "axios";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { createMerchant } from "../merchantSlice";
+import * as merchantAPI from "../merchantAPI";
+import type { MerchantDetail, MerchantKioskRow } from "../merchantAPI";
+import { ROUTES } from "../../../core/config/routes";
+import { canManageMerchants } from "../../../core/constants/roles";
+import { formatDisplayDate } from "../../../core/utils/helpers";
+import { getApiErrorMessage } from "../../../core/api/parseApiError";
+import "../../../layout/Layout.css";
+import "./MerchantList.css";
 
 export function MerchantList() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const user = useAppSelector((s) => s.auth.user)
-  const canMutate = canManageMerchants(user?.role)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const user = useAppSelector((s) => s.auth.user);
+  const canMutate = canManageMerchants(user?.role);
 
-  const list = useAppSelector((s) => s.merchants.list)
-  const listMeta = useAppSelector((s) => s.merchants.listMeta)
-  const loading = useAppSelector((s) => s.merchants.loadingList)
-  const error = useAppSelector((s) => s.merchants.error)
+  const [merchantIdInput, setMerchantIdInput] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    detail: MerchantDetail;
+    kiosks: MerchantKioskRow[];
+  } | null>(null);
 
-  const [page, setPage] = useState(1)
-  const [qInput, setQInput] = useState('')
-  const debouncedQ = useDebouncedValue(qInput, 400)
-  const [statusFilter, setStatusFilter] = useState('')
+  const [otpHint, setOtpHint] = useState(false);
+  const [otpSessionId, setOtpSessionId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpLocalError, setOtpLocalError] = useState<string | null>(null);
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [createSubmitting, setCreateSubmitting] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [formName, setFormName] = useState('')
-  const [formCode, setFormCode] = useState('')
-  const [formEmail, setFormEmail] = useState('')
-  const [formPhone, setFormPhone] = useState('')
-  const [formMerchantId, setFormMerchantId] = useState('')
-  const [createdPortalMerchantId, setCreatedPortalMerchantId] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formMerchantId, setFormMerchantId] = useState("");
+  const [createdPortalMerchantId, setCreatedPortalMerchantId] = useState<
+    string | null
+  >(null);
 
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  async function loadMerchant(otpToken?: string | null) {
+    const id = merchantIdInput.trim();
+    if (!id) {
+      setSearchError("Enter a merchant id.");
+      return;
+    }
+    setSearchError(null);
+    setOtpLocalError(null);
+    setSearchLoading(true);
+    try {
+      const { detail, kiosks } = await merchantAPI.fetchMerchantById(
+        id,
+        otpToken,
+      );
+      const kiosksFinal =
+        kiosks.length > 0
+          ? kiosks
+          : await merchantAPI.fetchMerchantKiosks(id, otpToken).catch(() => []);
+      setResult({ detail, kiosks: kiosksFinal });
+      setOtpHint(false);
+      setOtpSessionId(null);
+      setOtpCode("");
+    } catch (e) {
+      setResult(null);
+      const st = isAxiosError(e) ? e.response?.status : undefined;
+      if ((st === 403 || st === 401) && !otpToken) {
+        setOtpHint(true);
+        setSearchError(
+          "Reading this merchant requires email verification (in addition to your login). Send a code, then enter it below.",
+        );
+      } else {
+        setSearchError(getApiErrorMessage(e));
+      }
+    } finally {
+      setSearchLoading(false);
+    }
+  }
 
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedQ, statusFilter])
+  function handleSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    void loadMerchant();
+  }
 
-  useEffect(() => {
-    void dispatch(
-      loadMerchants({
-        page,
-        pageSize: PAGE_SIZE,
-        q: debouncedQ,
-        status: statusFilter,
-      })
-    )
-  }, [dispatch, page, debouncedQ, statusFilter])
+  async function handleSendOtp() {
+    const id = merchantIdInput.trim();
+    if (!id) {
+      setOtpLocalError("Enter a merchant id above first.");
+      return;
+    }
+    setOtpSending(true);
+    setOtpLocalError(null);
+    try {
+      const r = await merchantAPI.sendMerchantReadOtp(id);
+      setOtpSessionId(r.session_id);
+    } catch (err) {
+      setOtpLocalError(getApiErrorMessage(err));
+    } finally {
+      setOtpSending(false);
+    }
+  }
 
-  function openRow(id: string) {
-    navigate(ROUTES.MERCHANT_DETAIL.replace(':merchantId', id))
+  async function handleVerifyAndLoad() {
+    if (!otpSessionId) {
+      setOtpLocalError("Send a verification code first.");
+      return;
+    }
+    const code = otpCode.trim();
+    if (!code) {
+      setOtpLocalError("Enter the code from your email.");
+      return;
+    }
+    setOtpVerifying(true);
+    setOtpLocalError(null);
+    try {
+      const token = await merchantAPI.verifyOtpAndGetToken(otpSessionId, code);
+      if (!token) {
+        setOtpLocalError("Verification did not return a token. Try again.");
+        return;
+      }
+      await loadMerchant(token);
+    } catch (err) {
+      setOtpLocalError(getApiErrorMessage(err));
+    } finally {
+      setOtpVerifying(false);
+    }
+  }
+
+  function openDetailPage(portalId: string) {
+    navigate(ROUTES.MERCHANT_DETAIL.replace(":merchantId", portalId));
   }
 
   async function handleCreate(e: FormEvent) {
-    e.preventDefault()
-    setCreateError(null)
-    setCreateSubmitting(true)
+    e.preventDefault();
+    setCreateError(null);
+    setCreateSubmitting(true);
     try {
       const created = await dispatch(
         createMerchant({
           merchant_name: formName.trim(),
-          merchant_code: formCode.trim(),
           merchant_email: formEmail.trim(),
-          ...(formPhone.trim() ? { contact_phone: formPhone.trim() } : {}),
-          ...(formMerchantId.trim() ? { merchant_id: formMerchantId.trim() } : {}),
-        })
-      ).unwrap()
+          ...(formPhone.trim() ? { merchant_phone: formPhone.trim() } : {}),
+          ...(formMerchantId.trim()
+            ? { merchant_id: formMerchantId.trim() }
+            : {}),
+        }),
+      ).unwrap();
       if (created?.id) {
-        setCreatedPortalMerchantId(created.id)
+        setCreatedPortalMerchantId(created.id);
       }
-      setCreateOpen(false)
-      setFormName('')
-      setFormCode('')
-      setFormEmail('')
-      setFormPhone('')
-      setFormMerchantId('')
+      setCreateOpen(false);
+      setFormName("");
+      setFormEmail("");
+      setFormPhone("");
+      setFormMerchantId("");
     } catch (err) {
-      setCreateError(typeof err === 'string' ? err : 'Could not create merchant.')
+      setCreateError(
+        typeof err === "string" ? err : "Could not create merchant.",
+      );
     } finally {
-      setCreateSubmitting(false)
+      setCreateSubmitting(false);
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete merchant “${name}”? This may fail if the API does not support DELETE.`)) {
-      return
-    }
-    setDeletingId(id)
-    try {
-      await dispatch(removeMerchant(id)).unwrap()
-    } catch {
-      /* error surfaced via slice */
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
-  const { page: curPage, pageSize, totalItems, totalPages } = listMeta
-  const start = totalItems === 0 ? 0 : (curPage - 1) * pageSize + 1
-  const end = Math.min(curPage * pageSize, totalItems)
-
-  const activeOnPage = list.filter((m) => m.status === 'ACTIVE').length
-  const pendingOnPage = list.filter((m) => m.status === 'PENDING').length
+  const d = result?.detail;
 
   return (
     <div className="merchant-list page-shell">
@@ -116,7 +176,8 @@ export function MerchantList() {
           <p className="page-kicker">Management</p>
           <h1 className="page-title">Merchant directory</h1>
           <p className="page-desc">
-            Manage and monitor retail partners. Data loads from the Support Portal API (GET /merchants).
+            Look up a merchant by Support Portal id. If the API requires it,
+            verify with a one-time code.
           </p>
         </div>
         <div className="merchant-list__actions">
@@ -125,8 +186,8 @@ export function MerchantList() {
               type="button"
               className="btn btn--primary btn--sm"
               onClick={() => {
-                setCreateError(null)
-                setCreateOpen(true)
+                setCreateError(null);
+                setCreateOpen(true);
               }}
             >
               + Onboard merchant
@@ -135,198 +196,223 @@ export function MerchantList() {
         </div>
       </header>
 
-      {error ? (
-        <p className="merchant-list__banner merchant-list__banner--error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
       {createdPortalMerchantId ? (
-        <div className="merchant-list__banner merchant-list__banner--success card-surface" role="status">
+        <div
+          className="merchant-list__banner merchant-list__banner--success card-surface"
+          role="status"
+        >
           <p className="merchant-list__success-title">
-            <strong>Merchant saved.</strong> Register kiosks with this Support Portal merchant <strong>id</strong> (the
-            value in <code>POST /merchants/{"{this id}"}/kiosks</code>):
+            <strong>Merchant saved.</strong> Register kiosks with this Support
+            Portal merchant <strong>id</strong> (the value in{" "}
+            <code>POST /merchants/{"{this id}"}/kiosks</code>):
           </p>
           <div className="merchant-list__portal-id-row">
-            <code className="merchant-list__portal-id">{createdPortalMerchantId}</code>
+            <code className="merchant-list__portal-id">
+              {createdPortalMerchantId}
+            </code>
             <button
               type="button"
               className="btn btn--secondary btn--sm"
               onClick={() => {
-                void navigator.clipboard.writeText(createdPortalMerchantId)
+                void navigator.clipboard.writeText(createdPortalMerchantId);
               }}
             >
               Copy id
             </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCreatedPortalMerchantId(null)}>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => setCreatedPortalMerchantId(null)}
+            >
               Dismiss
             </button>
           </div>
           <p className="merchant-list__field-hint">
-            If kiosk registration says &quot;Merchant not found&quot;, the id in the form does not match any merchant row
-            in this environment—use the id above, or create the merchant here first.
+            If kiosk registration says &quot;Merchant not found&quot;, the id in
+            the form does not match any merchant row in this environment—use the
+            id above, or create the merchant here first.
           </p>
         </div>
       ) : null}
 
-      <section className="merchant-list__stats" aria-label="Merchant summary">
-        <article className="merchant-list__stat card-surface">
-          <h2 className="merchant-list__stat-label">Total partners</h2>
-          <p className="merchant-list__stat-value">{totalItems.toLocaleString()}</p>
-          <span className="merchant-list__trend">API total</span>
-        </article>
-        <article className="merchant-list__stat card-surface">
-          <h2 className="merchant-list__stat-label">Active (this page)</h2>
-          <p className="merchant-list__stat-value">{activeOnPage}</p>
-          <span className="merchant-list__trend">of {list.length} rows</span>
-        </article>
-        <article className="merchant-list__stat card-surface">
-          <h2 className="merchant-list__stat-label">Pending (this page)</h2>
-          <p className="merchant-list__stat-value merchant-list__stat-value--warn">{pendingOnPage}</p>
-        </article>
-        <article className="merchant-list__stat card-surface">
-          <h2 className="merchant-list__stat-label">Pagination</h2>
-          <p className="merchant-list__stat-value">
-            {curPage} / {Math.max(1, totalPages)}
-          </p>
-          <span className="merchant-list__trend">{pageSize} per page</span>
-        </article>
-      </section>
-
-      <section className="merchant-list__toolbar card-surface" aria-label="Search and filters">
-        <label className="merchant-list__field">
-          <span className="merchant-list__field-label">Search</span>
+      <form
+        className="merchant-list__search-hero card-surface"
+        aria-label="Search merchant"
+        onSubmit={handleSearchSubmit}
+      >
+        <label
+          className="merchant-list__search-hero-label"
+          htmlFor="merchant-id-search"
+        >
+          Search merchant
+        </label>
+        <div className="merchant-list__search-row">
           <input
-            className="merchant-list__input"
+            id="merchant-id-search"
+            className="merchant-list__search-hero-input"
             type="search"
-            placeholder="Name, code, or email"
-            value={qInput}
-            onChange={(e) => setQInput(e.target.value)}
+            placeholder="Support Portal merchant id (UUID)…"
+            value={merchantIdInput}
+            onChange={(e) => {
+              setMerchantIdInput(e.target.value);
+              setOtpSessionId(null);
+              setOtpHint(false);
+            }}
             autoComplete="off"
           />
-        </label>
-        <label className="merchant-list__field">
-          <span className="merchant-list__field-label">Status</span>
-          <select
-            className="merchant-list__input"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+          <button
+            type="submit"
+            className="btn btn--primary btn--sm"
+            disabled={searchLoading}
           >
-            <option value="">All</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="suspended">Suspended</option>
-          </select>
-        </label>
-      </section>
-
-      <section className="merchant-list__table-card card-surface" aria-labelledby="merchants-table-title">
-        <header className="merchant-list__table-head">
-          <h2 id="merchants-table-title" className="merchant-list__table-title">
-            Merchants
-          </h2>
-        </header>
-
-        {loading ? (
-          <p className="merchant-list__loading" role="status">
-            Loading merchants…
+            {searchLoading ? "Searching…" : "Search"}
+          </button>
+        </div>
+        <p className="merchant-list__search-hero-hint">
+          Use the Support Portal merchant <strong>id</strong> from{" "}
+          <code>POST /merchants</code> (same id used in{" "}
+          <code>/merchants/{"{id}"}/kiosks</code>). If the API returns 401,
+          complete email verification below—this is separate from super admin /
+          merchant admin login.
+        </p>
+        {searchError ? (
+          <p
+            className="merchant-list__banner merchant-list__banner--error"
+            role="alert"
+          >
+            {searchError}
           </p>
         ) : null}
 
-        <div className="merchant-list__mobile">
-          {list.map((m) => (
-            <MerchantCard key={m.id} merchant={m} onOpen={openRow} />
-          ))}
-        </div>
+        {otpHint ? (
+          <div className="merchant-list__otp card-surface">
+            <p className="merchant-list__otp-title">Verify access</p>
+            <div className="merchant-list__otp-actions">
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                disabled={otpSending}
+                onClick={() => void handleSendOtp()}
+              >
+                {otpSending ? "Sending…" : "Send code"}
+              </button>
+              <input
+                className="merchant-list__input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                disabled={otpVerifying}
+                onClick={() => void handleVerifyAndLoad()}
+              >
+                {otpVerifying ? "Verifying…" : "Verify & load"}
+              </button>
+            </div>
+            {otpSessionId ? (
+              <p className="merchant-list__field-hint">
+                Code sent. Check your email and enter the code above.
+              </p>
+            ) : null}
+            {otpLocalError ? (
+              <p
+                className="merchant-list__banner merchant-list__banner--error"
+                role="alert"
+              >
+                {otpLocalError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </form>
 
-        <div className="merchant-list__scroll">
-          <table className="merchant-list__table">
-            <thead>
-              <tr>
-                <th scope="col">Merchant identity</th>
-                <th scope="col">Email address</th>
-                <th scope="col">Status</th>
-                <th scope="col">Registered date</th>
-                <th scope="col">
-                  <span className="visually-hidden">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <button
-                      type="button"
-                      className="merchant-list__linklike"
-                      onClick={() => openRow(m.id)}
-                    >
-                      <strong>{m.name}</strong>
-                      <span className="merchant-list__sub">
-                        {m.category} · {m.location}
-                      </span>
-                    </button>
-                  </td>
-                  <td>{m.email}</td>
-                  <td>
-                    <span className={`merchant-list__pill merchant-list__pill--${m.status.toLowerCase()}`}>
-                      {m.status}
-                    </span>
-                  </td>
-                  <td>
-                    <time dateTime={m.registeredAt}>{formatDisplayDate(m.registeredAt)}</time>
-                  </td>
-                  <td>
-                    {canMutate ? (
-                      <button
-                        type="button"
-                        className="merchant-list__kebab"
-                        disabled={deletingId === m.id}
-                        aria-label={`Delete ${m.name}`}
-                        onClick={() => handleDelete(m.id, m.name)}
-                        title="Delete merchant"
-                      >
-                        {deletingId === m.id ? '…' : '✕'}
-                      </button>
-                    ) : (
-                      <span className="merchant-list__sub">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <footer className="merchant-list__footer">
-          <span>
-            Showing {start}–{end} of {totalItems.toLocaleString()} results
-          </span>
-          <nav className="merchant-list__pagination" aria-label="Pagination">
+      {d ? (
+        <section
+          className="merchant-list__detail card-surface"
+          aria-labelledby="merchant-detail-title"
+        >
+          <header className="merchant-list__detail-head">
+            <h2
+              id="merchant-detail-title"
+              className="merchant-list__detail-title"
+            >
+              {d.name}
+            </h2>
             <button
               type="button"
-              className="merchant-list__page merchant-list__page--nav"
-              disabled={curPage <= 1 || loading}
-              aria-label="Previous page"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="btn btn--secondary btn--sm"
+              onClick={() => openDetailPage(d.id)}
             >
-              ‹
+              Open full page
             </button>
-            <span className="merchant-list__page merchant-list__page--active" aria-current="page">
-              {curPage}
-            </span>
-            <button
-              type="button"
-              className="merchant-list__page merchant-list__page--nav"
-              disabled={curPage >= totalPages || loading || totalPages === 0}
-              aria-label="Next page"
-              onClick={() => setPage((p) => p + 1)}
-            >
-              ›
-            </button>
-          </nav>
-        </footer>
-      </section>
+          </header>
+          <dl className="merchant-list__detail-grid">
+            <dt>Merchant id</dt>
+            <dd>
+              <code>{d.id}</code>
+            </dd>
+            <dt>Reference</dt>
+            <dd>{d.registrationNumber}</dd>
+            <dt>Email</dt>
+            <dd>{d.email}</dd>
+            <dt>Phone</dt>
+            <dd>{d.phone}</dd>
+            <dt>Status</dt>
+            <dd>
+              <span
+                className={`merchant-list__pill merchant-list__pill--${d.status.toLowerCase()}`}
+              >
+                {d.status}
+              </span>
+            </dd>
+            <dt>Registered</dt>
+            <dd>
+              <time dateTime={d.registeredAt}>
+                {formatDisplayDate(d.registeredAt)}
+              </time>
+            </dd>
+          </dl>
+
+          {result && result.kiosks.length > 0 ? (
+            <div className="merchant-list__kiosks-wrap">
+              <h3 className="merchant-list__kiosks-title">
+                Kiosks ({result.kiosks.length})
+              </h3>
+              <div className="merchant-list__scroll">
+                <table className="merchant-list__table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Serial</th>
+                      <th scope="col">Online</th>
+                      <th scope="col">Face</th>
+                      <th scope="col">Camera</th>
+                      <th scope="col">Last sync</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.kiosks.map((k) => (
+                      <tr key={k.id}>
+                        <td>
+                          <code>{k.serialId}</code>
+                        </td>
+                        <td>{k.isOnline ? "Yes" : "No"}</td>
+                        <td>{k.faceStatus}</td>
+                        <td>{k.cameraStatus}</td>
+                        <td>{k.lastSync}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {createOpen ? (
         <div className="merchant-list__modal-root" role="presentation">
@@ -336,13 +422,23 @@ export function MerchantList() {
             aria-label="Close dialog"
             onClick={() => !createSubmitting && setCreateOpen(false)}
           />
-          <div className="merchant-list__modal card-surface" role="dialog" aria-modal="true" aria-labelledby="merchant-create-title">
-            <h2 id="merchant-create-title" className="merchant-list__modal-title">
+          <div
+            className="merchant-list__modal card-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="merchant-create-title"
+          >
+            <h2
+              id="merchant-create-title"
+              className="merchant-list__modal-title"
+            >
               Onboard merchant
             </h2>
             <form className="merchant-list__modal-form" onSubmit={handleCreate}>
               <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Merchant name</span>
+                <span className="merchant-list__field-label">
+                  Merchant name
+                </span>
                 <input
                   className="merchant-list__input"
                   required
@@ -351,16 +447,9 @@ export function MerchantList() {
                 />
               </label>
               <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Merchant code</span>
-                <input
-                  className="merchant-list__input"
-                  required
-                  value={formCode}
-                  onChange={(e) => setFormCode(e.target.value)}
-                />
-              </label>
-              <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Merchant email</span>
+                <span className="merchant-list__field-label">
+                  Merchant email
+                </span>
                 <input
                   className="merchant-list__input"
                   type="email"
@@ -370,15 +459,20 @@ export function MerchantList() {
                 />
               </label>
               <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Contact phone (optional)</span>
+                <span className="merchant-list__field-label">
+                  Merchant phone*
+                </span>
                 <input
                   className="merchant-list__input"
+                  type="tel"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
                 />
               </label>
               <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Merchant ID (optional)</span>
+                <span className="merchant-list__field-label">
+                  Merchant ID *
+                </span>
                 <input
                   className="merchant-list__input"
                   value={formMerchantId}
@@ -388,10 +482,14 @@ export function MerchantList() {
                 />
               </label>
               <p className="merchant-list__field-hint">
-                Sent as <code>merchant_id</code> only if filled. Use whatever format your backend expects.
+                Sent as <code>merchant_id</code> only if filled. Use whatever
+                format your backend expects.
               </p>
               {createError ? (
-                <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+                <p
+                  className="merchant-list__banner merchant-list__banner--error"
+                  role="alert"
+                >
                   {createError}
                 </p>
               ) : null}
@@ -404,8 +502,12 @@ export function MerchantList() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn--primary btn--sm" disabled={createSubmitting}>
-                  {createSubmitting ? 'Saving…' : 'Create'}
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--sm"
+                  disabled={createSubmitting}
+                >
+                  {createSubmitting ? "Saving…" : "Create"}
                 </button>
               </div>
             </form>
@@ -413,5 +515,5 @@ export function MerchantList() {
         </div>
       ) : null}
     </div>
-  )
+  );
 }

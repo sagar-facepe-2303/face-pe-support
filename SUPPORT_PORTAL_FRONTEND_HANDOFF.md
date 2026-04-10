@@ -1,5 +1,9 @@
 # Support Portal Frontend Integration Guide
 
+For **merchant endpoints and OTP** (read/update merchant, roles, common mistakes), see **[MERCHANT_API_GUIDE.md](./MERCHANT_API_GUIDE.md)**.
+
+For **end-customer users** (`GET`/`PUT`/`DELETE` `/users/{id}`, OTP scopes `read_user` / `update_user` / `delete_user`), see **[USER_API_GUIDE.md](./USER_API_GUIDE.md)**.
+
 ## Base URL and headers
 - Default Axios base URL: `https://supportportal.dev.facepe.ai/sp`
 - Override with `.env` using `VITE_API_BASE_URL`
@@ -58,6 +62,18 @@ Frontend sequence for sensitive user operations:
    - `GET /users/{id}` (read_user)
    - `PUT /users/{id}` (update_user)
    - `DELETE /users/{id}` (delete_user)
+
+### Merchant read OTP (separate from login JWT)
+Creating or listing merchants may succeed with only `Authorization: Bearer <access_token>`, but **reading** a single merchant (`GET /merchants/{id}`) and related kiosk lists can return **401 Unauthorized** or **403 Forbidden** until a **read_merchant** OTP is completed. This is **not** a super-admin vs merchant-admin role bug: both roles still use the same flow—**login proves who you are; OTP proves you may view that merchant record.**
+
+Sequence:
+1. `POST /otp/send` with `{ "purpose": "read_merchant", "target_merchant_id": "<portal merchant id from URL>" }`
+2. `POST /otp/verify` with `session_id` + `code`
+3. Call `GET /merchants/{id}` (and `GET /merchants/{id}/kiosks` if needed) with **both** headers:
+   - `Authorization: Bearer <access_token>`
+   - `X-OTP-Token: <token from verify step>`
+
+Use the Support Portal merchant **row id** (the `id` field from `POST /merchants`, same as in `/merchants/{id}/kiosks`), not only the external `merchant_id`, unless your API documents otherwise.
 
 ## Notes on current UI data
 Some list/detail pages still use local seeded data for table rendering where list endpoints are not specified in the handoff contract (for example support user list, merchant directory listing, and user list page). The API write/actions and scoped endpoints are already wired for production integration.

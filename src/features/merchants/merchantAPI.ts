@@ -6,11 +6,15 @@ import { formatRelativeTime } from '../../core/utils/helpers'
 /** Shapes returned by GET /merchants and GET /merchants/{id} (Pydantic-friendly). */
 export interface MerchantResponse {
   id: string
+  /** External / business merchant id (may differ from row `id`) */
+  merchant_id?: string
   merchant_name: string
-  merchant_code: string
+  /** Legacy; omit from create payloads — API may omit */
+  merchant_code?: string
   /** Primary email field from API */
   merchant_email?: string
   contact_email?: string
+  merchant_phone?: string | null
   contact_phone?: string | null
   status?: string | null
   is_active?: boolean | null
@@ -56,9 +60,8 @@ export interface MerchantKioskRow {
 
 export interface CreateMerchantRequest {
   merchant_name: string
-  merchant_code: string
   merchant_email: string
-  contact_phone?: string
+  merchant_phone?: string
   status?: string
   /** Any string the API accepts (uuid, urn:uuid:…, code, etc.) */
   merchant_id?: string
@@ -67,7 +70,7 @@ export interface CreateMerchantRequest {
 export interface UpdateMerchantRequest {
   merchant_name?: string
   merchant_email?: string
-  contact_phone?: string
+  merchant_phone?: string
   status?: string
   is_active?: boolean
 }
@@ -116,6 +119,9 @@ export interface KioskApiResponse {
   camera_status: string | boolean
   is_active?: boolean | null
   updated_at?: string | null
+  /** API guide field name */
+  last_heartbeat?: string | null
+  /** Alternate name seen in some responses */
   last_heartbeat_at?: string | null
 }
 
@@ -135,13 +141,20 @@ function mapMerchantStatus(m: MerchantResponse): MerchantRow['status'] {
   return 'ACTIVE'
 }
 
+function merchantSubtitle(m: MerchantResponse): string {
+  const ref = m.merchant_id?.trim() || m.merchant_code?.trim()
+  if (ref) return ref.length > 28 ? `${ref.slice(0, 26)}…` : ref
+  return m.id.length > 12 ? `${m.id.slice(0, 8)}…` : m.id
+}
+
 function mapMerchantResponseToRow(m: MerchantResponse): MerchantRow {
   const registeredAt = m.created_at ?? m.updated_at ?? new Date().toISOString()
+  const phone = m.merchant_phone ?? m.contact_phone
   return {
     id: m.id,
     name: m.merchant_name,
-    category: m.merchant_code,
-    location: m.contact_phone?.trim() ? m.contact_phone : '—',
+    category: merchantSubtitle(m),
+    location: phone?.trim() ? String(phone) : '—',
     email: m.merchant_email ?? m.contact_email ?? '—',
     status: mapMerchantStatus(m),
     registeredAt,
@@ -150,13 +163,14 @@ function mapMerchantResponseToRow(m: MerchantResponse): MerchantRow {
 
 export function mapMerchantToDetail(m: MerchantResponse): MerchantDetail {
   const row = mapMerchantResponseToRow(m)
+  const phone = m.merchant_phone ?? m.contact_phone
   return {
     ...row,
     legalEntity: m.merchant_name,
-    registrationNumber: m.merchant_code,
-    contactName: m.contact_phone?.trim() ? 'Primary contact' : '—',
+    registrationNumber: m.merchant_id ?? m.merchant_code ?? m.id,
+    contactName: phone?.trim() ? 'Primary contact' : '—',
     headquarters: '—',
-    phone: m.contact_phone ?? '—',
+    phone: phone ?? '—',
     settlementMethod: '—',
     apiUptime: '—',
     riskLevel: m.is_active === false ? 'HIGH' : 'LOW',
@@ -170,7 +184,7 @@ function kioskStatusToLabel(v: string | boolean): string {
 }
 
 function mapKioskToMerchantRow(k: KioskApiResponse): MerchantKioskRow {
-  const ts = k.last_heartbeat_at ?? k.updated_at
+  const ts = k.last_heartbeat ?? k.last_heartbeat_at ?? k.updated_at
   const batteryPct = k.is_online ? 100 : 0
   const isActive = k.is_active !== false && k.is_active !== null
   return {
@@ -214,9 +228,63 @@ export async function fetchMerchantsPaged(params: ListMerchantsParams): Promise<
   }
 }
 
-export async function fetchMerchantById(id: string): Promise<MerchantDetail> {
-  const response = await api.get<MerchantResponse>(`/merchants/${id}`)
-  return mapMerchantToDetail(response.data)
+export async function fetchMerchantById(
+  id: string,
+  otpToken?: string | null
+): Promise<{ detail: MerchantDetail; kiosks: MerchantKioskRow[] }> {
+  const response = await api.get<MerchantResponse & { kiosks?: KioskApiResponse[] }>(`/merchants/${id}`, {
+    ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+  })
+  const data = response.data
+  const detail = mapMerchantToDetail(data)
+  const kiosks = Array.isArray(data.kiosks) ? data.kiosks.map((k) => mapKioskToMerchantRow(k)) : []
+  return { detail, kiosks }
+}
+
+/** Merchant OTP purposes from API guide (`MERCHANT_API_GUIDE.md`). */
+export type MerchantOtpPurpose = 'read_merchant' | 'update_merchant'
+
+export interface SendMerchantOtpResponse {
+  session_id: string
+  expires_at: string
+  delivery_method?: string
+  masked_recipient?: string
+}
+
+/** `POST /otp/send` for merchant targets — use `read_merchant` or `update_merchant`. */
+export async function sendMerchantOtp(
+  purpose: MerchantOtpPurpose,
+  targetMerchantId: string
+): Promise<SendMerchantOtpResponse> {
+  const response = await api.post<SendMerchantOtpResponse>('/otp/send', {
+    purpose,
+    target_merchant_id: targetMerchantId,
+  })
+  return response.data
+}
+
+/** Convenience: `purpose: read_merchant` (see Merchant API Guide). */
+export async function sendMerchantReadOtp(targetMerchantId: string): Promise<SendMerchantOtpResponse> {
+  return sendMerchantOtp('read_merchant', targetMerchantId)
+}
+
+export interface VerifyOtpResponse {
+  token?: string
+  otp_token?: string
+  token_type?: string
+  expires_at?: string
+  target_type?: string
+  target_id?: string
+}
+
+/** `POST /otp/verify` — returns JWT-like OTP token for `X-OTP-Token`. */
+export async function verifyOtpAndGetToken(sessionId: string, code: string): Promise<string> {
+  const response = await api.post<VerifyOtpResponse>('/otp/verify', {
+    session_id: sessionId,
+    code,
+  })
+  const d = response.data
+  return (d.token ?? d.otp_token ?? '').trim()
 }
 
 function parseKioskListPayload(data: unknown): KioskApiResponse[] {
@@ -232,9 +300,14 @@ function parseKioskListPayload(data: unknown): KioskApiResponse[] {
   return []
 }
 
-export async function fetchMerchantKiosks(merchantId: string): Promise<MerchantKioskRow[]> {
+export async function fetchMerchantKiosks(
+  merchantId: string,
+  otpToken?: string | null
+): Promise<MerchantKioskRow[]> {
   try {
-    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`)
+    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`, {
+      ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+    })
     return parseKioskListPayload(response.data).map((x) => mapKioskToMerchantRow(x))
   } catch (e) {
     if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
@@ -262,13 +335,21 @@ export async function createMerchant(payload: CreateMerchantRequest): Promise<Me
   return response.data
 }
 
-export async function updateMerchant(merchantId: string, payload: UpdateMerchantRequest): Promise<MerchantResponse> {
-  const response = await api.put<MerchantResponse>(`/merchants/${merchantId}`, payload)
+export async function updateMerchant(
+  merchantId: string,
+  payload: UpdateMerchantRequest,
+  otpToken?: string | null
+): Promise<MerchantResponse> {
+  const response = await api.put<MerchantResponse>(`/merchants/${merchantId}`, payload, {
+    ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+  })
   return response.data
 }
 
-export async function deleteMerchant(merchantId: string): Promise<void> {
-  await api.delete(`/merchants/${merchantId}`)
+export async function deleteMerchant(merchantId: string, otpToken?: string | null): Promise<void> {
+  await api.delete(`/merchants/${merchantId}`, {
+    ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+  })
 }
 
 export async function createMerchantKiosk(
