@@ -1,97 +1,113 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../../app/hooks'
-import { inviteSupportUser, loadSupportUsers, patchSupportUser } from '../supportSlice'
-import { ROLES, getAssignableSupportRoles } from '../../../core/constants/roles'
-import type { Role } from '../../../core/constants/roles'
-import type { SupportUserResponse } from '../supportAPI'
-import { ROUTES } from '../../../core/config/routes'
-import { formatDisplayDate } from '../../../core/utils/helpers'
-import '../../../layout/Layout.css'
-import './Users.css'
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import {
+  inviteSupportUser,
+  loadSupportUsers,
+  patchSupportUser,
+} from "../supportSlice";
+import {
+  ROLES,
+  getAssignableSupportRoles,
+} from "../../../core/constants/roles";
+import type { Role } from "../../../core/constants/roles";
+import type { SupportUserResponse } from "../supportAPI";
+import { ROUTES } from "../../../core/config/routes";
+import { formatDisplayDate } from "../../../core/utils/helpers";
+import "../../../layout/Layout.css";
+import "./Users.css";
 
-const MIN_PASSWORD_LENGTH = 8
+const MIN_PASSWORD_LENGTH = 8;
 
 const roleLabel: Record<string, string> = {
-  [ROLES.SUPER_ADMIN]: 'Super admin',
-  [ROLES.MERCHANT_ADMIN]: 'Merchant admin',
-  [ROLES.USER_ADMIN]: 'User admin',
-  [ROLES.MERCHANT_SUPPORT]: 'Merchant support',
-  [ROLES.USER_SUPPORT]: 'User support',
-}
+  [ROLES.SUPER_ADMIN]: "Super admin",
+  [ROLES.MERCHANT_ADMIN]: "Merchant admin",
+  [ROLES.USER_ADMIN]: "User admin",
+  [ROLES.MERCHANT_SUPPORT]: "Merchant support",
+  [ROLES.USER_SUPPORT]: "User support",
+};
 
-const ALL_ROLE_FILTER = 'all'
+const ALL_ROLE_FILTER = "all";
 
 export function Users() {
-  const dispatch = useAppDispatch()
-  const members = useAppSelector((s) => s.support.supportUsers)
-  const loading = useAppSelector((s) => s.support.loadingList)
-  const sliceError = useAppSelector((s) => s.support.error)
-  const actorRole = useAppSelector((s) => s.auth.user?.role)
-  const currentUserId = useAppSelector((s) => s.auth.user?.id)
+  const dispatch = useAppDispatch();
+  const members = useAppSelector((s) => s.support.supportUsers);
+  const loading = useAppSelector((s) => s.support.loadingList);
+  const sliceError = useAppSelector((s) => s.support.error);
+  const actorRole = useAppSelector((s) => s.auth.user?.role);
+  const currentUserId = useAppSelector((s) => s.auth.user?.id);
 
-  const assignableRoles = useMemo(() => getAssignableSupportRoles(actorRole), [actorRole])
-  const canInvite = assignableRoles.length > 0
-  const isSuperAdmin = actorRole === ROLES.SUPER_ADMIN
+  const assignableRoles = useMemo(
+    () => getAssignableSupportRoles(actorRole),
+    [actorRole],
+  );
+  const canInvite = assignableRoles.length > 0;
+  const isSuperAdmin = actorRole === ROLES.SUPER_ADMIN;
 
-  const [inviteName, setInviteName] = useState('')
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [invitePassword, setInvitePassword] = useState('')
-  const [inviteRole, setInviteRole] = useState<Role>(assignableRoles[0] ?? ROLES.USER_SUPPORT)
-  const [inviteSubmitting, setInviteSubmitting] = useState(false)
-  const [inviteError, setInviteError] = useState<string | null>(null)
-  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePassword, setInvitePassword] = useState("");
+  const [inviteRole, setInviteRole] = useState<Role>(
+    assignableRoles[0] ?? ROLES.USER_SUPPORT,
+  );
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
-  const [search, setSearch] = useState('')
-  const [filterRole, setFilterRole] = useState<string>(ALL_ROLE_FILTER)
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState<string>(ALL_ROLE_FILTER);
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "inactive"
+  >("all");
 
-  const [editUser, setEditUser] = useState<SupportUserResponse | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editActive, setEditActive] = useState(true)
-  const [editSubmitting, setEditSubmitting] = useState(false)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [editUser, setEditUser] = useState<SupportUserResponse | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editActive, setEditActive] = useState(true);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
-    void dispatch(loadSupportUsers())
-  }, [dispatch])
+    void dispatch(loadSupportUsers());
+  }, [dispatch]);
 
   useEffect(() => {
     if (assignableRoles.length && !assignableRoles.includes(inviteRole)) {
-      setInviteRole(assignableRoles[0])
+      setInviteRole(assignableRoles[0]);
     }
-  }, [assignableRoles, inviteRole])
+  }, [assignableRoles, inviteRole]);
 
   const filteredMembers = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = search.trim().toLowerCase();
     return members.filter((u) => {
-      if (filterRole !== ALL_ROLE_FILTER && u.role !== filterRole) return false
-      if (filterStatus === 'active' && !u.is_active) return false
-      if (filterStatus === 'inactive' && u.is_active) return false
-      if (!q) return true
+      if (filterRole !== ALL_ROLE_FILTER && u.role !== filterRole) return false;
+      if (filterStatus === "active" && !u.is_active) return false;
+      if (filterStatus === "inactive" && u.is_active) return false;
+      if (!q) return true;
       return (
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         (roleLabel[u.role] ?? u.role).toLowerCase().includes(q)
-      )
-    })
-  }, [members, search, filterRole, filterStatus])
+      );
+    });
+  }, [members, search, filterRole, filterStatus]);
 
   async function onInvite(e: FormEvent) {
-    e.preventDefault()
-    setInviteError(null)
-    setInviteSuccess(null)
-    const name = inviteName.trim()
-    const email = inviteEmail.trim()
+    e.preventDefault();
+    setInviteError(null);
+    setInviteSuccess(null);
+    const name = inviteName.trim();
+    const email = inviteEmail.trim();
     if (!name || !email || !invitePassword) {
-      setInviteError('Name, email, and password are required.')
-      return
+      setInviteError("Name, email, and password are required.");
+      return;
     }
     if (invitePassword.length < MIN_PASSWORD_LENGTH) {
-      setInviteError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
-      return
+      setInviteError(
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+      );
+      return;
     }
-    setInviteSubmitting(true)
+    setInviteSubmitting(true);
     try {
       await dispatch(
         inviteSupportUser({
@@ -99,61 +115,65 @@ export function Users() {
           email,
           password: invitePassword,
           role: inviteRole,
-        })
-      ).unwrap()
-      setInviteSuccess(`${email} was added as ${roleLabel[inviteRole] ?? inviteRole}.`)
-      setInviteName('')
-      setInviteEmail('')
-      setInvitePassword('')
+        }),
+      ).unwrap();
+      setInviteSuccess(
+        `${email} was added as ${roleLabel[inviteRole] ?? inviteRole}.`,
+      );
+      setInviteName("");
+      setInviteEmail("");
+      setInvitePassword("");
     } catch (err) {
-      setInviteError(typeof err === 'string' ? err : 'Could not create support user.')
+      setInviteError(
+        typeof err === "string" ? err : "Could not create support user.",
+      );
     } finally {
-      setInviteSubmitting(false)
+      setInviteSubmitting(false);
     }
   }
 
   function openEdit(u: SupportUserResponse) {
-    setEditUser(u)
-    setEditName(u.name)
-    setEditActive(u.is_active)
-    setEditError(null)
+    setEditUser(u);
+    setEditName(u.name);
+    setEditActive(u.is_active);
+    setEditError(null);
   }
 
   async function onSaveEdit(e: FormEvent) {
-    e.preventDefault()
-    if (!editUser) return
-    const name = editName.trim()
+    e.preventDefault();
+    if (!editUser) return;
+    const name = editName.trim();
     if (!name) {
-      setEditError('Name is required.')
-      return
+      setEditError("Name is required.");
+      return;
     }
     if (editUser.id === currentUserId && editUser.is_active && !editActive) {
-      setEditError('You cannot deactivate your own account.')
-      return
+      setEditError("You cannot deactivate your own account.");
+      return;
     }
-    setEditSubmitting(true)
-    setEditError(null)
+    setEditSubmitting(true);
+    setEditError(null);
     try {
       await dispatch(
         patchSupportUser({
           id: editUser.id,
           payload: { name, is_active: editActive },
-        })
-      ).unwrap()
-      setEditUser(null)
+        }),
+      ).unwrap();
+      setEditUser(null);
     } catch (err) {
-      setEditError(typeof err === 'string' ? err : 'Update failed.')
+      setEditError(typeof err === "string" ? err : "Update failed.");
     } finally {
-      setEditSubmitting(false)
+      setEditSubmitting(false);
     }
   }
 
   function onToggleEditActive(next: boolean) {
-    if (!editUser) return
+    if (!editUser) return;
     if (editUser.id === currentUserId && editUser.is_active && !next) {
-      return
+      return;
     }
-    setEditActive(next)
+    setEditActive(next);
   }
 
   return (
@@ -163,15 +183,20 @@ export function Users() {
           <p className="page-kicker">Operations</p>
           <h1 className="page-title">Support team</h1>
           <p className="page-desc">
-            Manage support portal operators. APIs: <code>POST /sp/support-users</code>,{' '}
-            <code>PATCH /sp/support-users/{"{id}"}</code>, list via <code>GET /sp/support-users</code>. RBAC:{' '}
-            super admin may assign any role; user admin only <code>user_support</code>; merchant admin only{' '}
+            Manage support portal operators. APIs:{" "}
+            <code>POST /sp/support-users</code>,{" "}
+            <code>PATCH /sp/support-users/{"{id}"}</code>, list via{" "}
+            <code>GET /sp/support-users</code>. RBAC: super admin may assign any
+            role; user admin only <code>user_support</code>; merchant admin only{" "}
             <code>merchant_support</code>.
           </p>
         </div>
         <div className="support-team-page__actions">
           {isSuperAdmin ? (
-            <Link to={ROUTES.SUPPORT_TEAM_CREATE_ADMIN} className="btn btn--primary btn--sm">
+            <Link
+              to={ROUTES.SUPPORT_TEAM_CREATE_ADMIN}
+              className="btn btn--primary btn--sm"
+            >
               Create admin (full page)
             </Link>
           ) : null}
@@ -179,13 +204,19 @@ export function Users() {
       </header>
 
       {sliceError ? (
-        <p className="support-team-api__banner support-team-api__banner--error" role="alert">
+        <p
+          className="support-team-api__banner support-team-api__banner--error"
+          role="alert"
+        >
           {sliceError}
         </p>
       ) : null}
 
       {canInvite ? (
-        <section className="support-team-api__invite card-surface" aria-labelledby="invite-heading">
+        <section
+          className="support-team-api__invite card-surface"
+          aria-labelledby="invite-heading"
+        >
           <h2 id="invite-heading" className="support-team-api__h2">
             Add new member
           </h2>
@@ -246,8 +277,12 @@ export function Users() {
                 {inviteSuccess}
               </p>
             ) : null}
-            <button type="submit" className="btn btn--primary btn--sm" disabled={inviteSubmitting}>
-              {inviteSubmitting ? 'Submitting…' : 'Add member'}
+            <button
+              type="submit"
+              className="btn btn--primary btn--sm"
+              disabled={inviteSubmitting}
+            >
+              {inviteSubmitting ? "Submitting…" : "Add member"}
             </button>
           </form>
         </section>
@@ -257,12 +292,17 @@ export function Users() {
         </p>
       )}
 
-      <section className="support-team-api__table-card card-surface" aria-labelledby="members-heading">
+      <section
+        className="support-team-api__table-card card-surface"
+        aria-labelledby="members-heading"
+      >
         <header className="support-team-api__table-head">
           <h2 id="members-heading" className="support-team-api__h2">
             Support users
           </h2>
-          <p className="support-team-api__sub">Listed from GET /support-users (base path /sp).</p>
+          <p className="support-team-api__sub">
+            Listed from GET /support-users (base path /sp).
+          </p>
         </header>
 
         {members.length > 0 ? (
@@ -298,7 +338,11 @@ export function Users() {
               <select
                 className="support-team-api__input"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+                onChange={(e) =>
+                  setFilterStatus(
+                    e.target.value as "all" | "active" | "inactive",
+                  )
+                }
               >
                 <option value="all">All</option>
                 <option value="active">Active</option>
@@ -313,9 +357,13 @@ export function Users() {
             Loading…
           </p>
         ) : members.length === 0 ? (
-          <p className="support-team-api__empty">No users returned. The list may be empty or unavailable.</p>
+          <p className="support-team-api__empty">
+            No users returned. The list may be empty or unavailable.
+          </p>
         ) : filteredMembers.length === 0 ? (
-          <p className="support-team-api__empty">No users match the current filters.</p>
+          <p className="support-team-api__empty">
+            No users match the current filters.
+          </p>
         ) : (
           <div className="support-team-api__scroll">
             <table className="support-team-api__table">
@@ -337,26 +385,36 @@ export function Users() {
                     <td>{u.name}</td>
                     <td>{u.email}</td>
                     <td>
-                      <span className="support-team-api__role">{roleLabel[u.role] ?? u.role}</span>
+                      <span className="support-team-api__role">
+                        {roleLabel[u.role] ?? u.role}
+                      </span>
                     </td>
                     <td>
                       <span
                         className={
-                          u.is_active ? 'support-team-api__status support-team-api__status--on' : 'support-team-api__status support-team-api__status--off'
+                          u.is_active
+                            ? "support-team-api__status support-team-api__status--on"
+                            : "support-team-api__status support-team-api__status--off"
                         }
                       >
-                        {u.is_active ? 'Active' : 'Inactive'}
+                        {u.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td>
                       {u.created_at ? (
-                        <time dateTime={u.created_at}>{formatDisplayDate(u.created_at)}</time>
+                        <time dateTime={u.created_at}>
+                          {formatDisplayDate(u.created_at)}
+                        </time>
                       ) : (
-                        '—'
+                        "—"
                       )}
                     </td>
                     <td>
-                      <button type="button" className="btn btn--ghost btn--sm" onClick={() => openEdit(u)}>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => openEdit(u)}
+                      >
                         Edit
                       </button>
                     </td>
@@ -376,12 +434,23 @@ export function Users() {
             aria-label="Close"
             onClick={() => !editSubmitting && setEditUser(null)}
           />
-          <div className="support-team-api__modal card-surface" role="dialog" aria-modal="true" aria-labelledby="edit-dialog-title">
-            <h2 id="edit-dialog-title" className="support-team-api__modal-title">
+          <div
+            className="support-team-api__modal card-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-dialog-title"
+          >
+            <h2
+              id="edit-dialog-title"
+              className="support-team-api__modal-title"
+            >
               Edit support user
             </h2>
             <p className="support-team-api__modal-email">{editUser.email}</p>
-            <form onSubmit={onSaveEdit} className="support-team-api__form support-team-api__form--modal">
+            <form
+              onSubmit={onSaveEdit}
+              className="support-team-api__form support-team-api__form--modal"
+            >
               <label className="support-team-api__field">
                 <span>Name</span>
                 <input
@@ -392,22 +461,31 @@ export function Users() {
                 />
               </label>
               <div className="support-team-api__toggle">
-                <span id="edit-active-label" className="support-team-api__toggle-text">
+                <span
+                  id="edit-active-label"
+                  className="support-team-api__toggle-text"
+                >
                   Active status
                 </span>
                 <button
                   type="button"
-                  className={`support-team-api__switch${editActive ? ' support-team-api__switch--on' : ''}`}
+                  className={`support-team-api__switch${
+                    editActive ? " support-team-api__switch--on" : ""
+                  }`}
                   role="switch"
                   aria-checked={editActive}
                   aria-labelledby="edit-active-label"
                   onClick={() => onToggleEditActive(!editActive)}
                 >
-                  <span className="visually-hidden">{editActive ? 'Active' : 'Inactive'}</span>
+                  <span className="visually-hidden">
+                    {editActive ? "Active" : "Inactive"}
+                  </span>
                 </button>
               </div>
               {editUser.id === currentUserId && editUser.is_active ? (
-                <p className="support-team-api__hint">You cannot deactivate your own account.</p>
+                <p className="support-team-api__hint">
+                  You cannot deactivate your own account.
+                </p>
               ) : null}
               {editError ? (
                 <p className="support-team-api__err" role="alert">
@@ -423,8 +501,12 @@ export function Users() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn--primary btn--sm" disabled={editSubmitting}>
-                  {editSubmitting ? 'Saving…' : 'Save changes'}
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--sm"
+                  disabled={editSubmitting}
+                >
+                  {editSubmitting ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </form>
@@ -432,5 +514,5 @@ export function Users() {
         </div>
       ) : null}
     </div>
-  )
+  );
 }
