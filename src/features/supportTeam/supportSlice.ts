@@ -1,20 +1,28 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import type { RootState } from '../../app/store'
+import { getApiErrorMessage } from '../../core/api/parseApiError'
+import type { Role } from '../../core/constants/roles'
 import * as supportAPI from './supportAPI'
-import type { DashboardMetrics, SupportAgent } from './supportAPI'
+import type {
+  CreateSupportUserPayload,
+  DashboardMetrics,
+  SupportUserResponse,
+  UpdateSupportUserPayload,
+} from './supportAPI'
 
 interface SupportState {
   metrics: DashboardMetrics | null
-  agents: SupportAgent[]
+  supportUsers: SupportUserResponse[]
   loadingMetrics: boolean
-  loadingAgents: boolean
+  loadingList: boolean
   error: string | null
 }
 
 const initialState: SupportState = {
   metrics: null,
-  agents: [],
+  supportUsers: [],
   loadingMetrics: false,
-  loadingAgents: false,
+  loadingList: false,
   error: null,
 }
 
@@ -29,13 +37,40 @@ export const loadDashboardMetrics = createAsyncThunk(
   }
 )
 
-export const loadSupportAgents = createAsyncThunk(
-  'support/loadSupportAgents',
+export const loadSupportUsers = createAsyncThunk(
+  'support/loadSupportUsers',
   async (_, { rejectWithValue }) => {
     try {
-      return await supportAPI.fetchSupportAgents()
+      return await supportAPI.fetchSupportUsersList()
     } catch (e) {
-      return rejectWithValue(e instanceof Error ? e.message : 'Failed to load team')
+      return rejectWithValue(getApiErrorMessage(e))
+    }
+  }
+)
+
+export const inviteSupportUser = createAsyncThunk(
+  'support/invite',
+  async (payload: CreateSupportUserPayload, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const actorRole = (getState() as RootState).auth.user?.role as Role | undefined
+      await supportAPI.createSupportUser(actorRole, payload)
+      await dispatch(loadSupportUsers()).unwrap()
+    } catch (e) {
+      return rejectWithValue(e instanceof Error ? e.message : getApiErrorMessage(e))
+    }
+  }
+)
+
+export const patchSupportUser = createAsyncThunk(
+  'support/patch',
+  async (
+    { id, payload }: { id: string; payload: UpdateSupportUserPayload },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await supportAPI.updateSupportUser(id, payload)
+    } catch (e) {
+      return rejectWithValue(e instanceof Error ? e.message : getApiErrorMessage(e))
     }
   }
 )
@@ -58,15 +93,36 @@ const supportSlice = createSlice({
         state.loadingMetrics = false
         state.error = (action.payload as string) ?? 'Error'
       })
-      .addCase(loadSupportAgents.pending, (state) => {
-        state.loadingAgents = true
+      .addCase(loadSupportUsers.pending, (state) => {
+        state.loadingList = true
+        state.error = null
       })
-      .addCase(loadSupportAgents.fulfilled, (state, action) => {
-        state.loadingAgents = false
-        state.agents = action.payload
+      .addCase(loadSupportUsers.fulfilled, (state, action) => {
+        state.loadingList = false
+        state.supportUsers = action.payload
       })
-      .addCase(loadSupportAgents.rejected, (state, action) => {
-        state.loadingAgents = false
+      .addCase(loadSupportUsers.rejected, (state, action) => {
+        state.loadingList = false
+        state.error = (action.payload as string) ?? 'Error'
+      })
+      .addCase(inviteSupportUser.pending, (state) => {
+        state.error = null
+      })
+      .addCase(inviteSupportUser.fulfilled, (state) => {
+        state.error = null
+      })
+      .addCase(inviteSupportUser.rejected, (state, action) => {
+        state.error = (action.payload as string) ?? 'Error'
+      })
+      .addCase(patchSupportUser.fulfilled, (state, action) => {
+        state.error = null
+        const updated = action.payload
+        const i = state.supportUsers.findIndex((u) => u.id === updated.id)
+        if (i >= 0) {
+          state.supportUsers[i] = updated
+        }
+      })
+      .addCase(patchSupportUser.rejected, (state, action) => {
         state.error = (action.payload as string) ?? 'Error'
       })
   },

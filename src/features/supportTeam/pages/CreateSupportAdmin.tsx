@@ -81,7 +81,7 @@ export function CreateSupportAdmin() {
           <p className="page-kicker">Support Team</p>
           <h1 className="page-title">Create Admin</h1>
           <p className="page-desc">
-            Super Admin can create User Admin and Merchant Admin accounts.
+            Super admins can assign any support portal role. Other roles use the same rules as on the team list.
           </p>
         </div>
         <Link to={ROUTES.SUPPORT_TEAM} className="btn btn--secondary btn--sm">

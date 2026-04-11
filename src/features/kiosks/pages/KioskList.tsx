@@ -1,17 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector, useDebouncedValue } from '../../../app/hooks'
+import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { createMerchantKiosk } from '../../merchants/merchantSlice'
-import { loadKiosks, removeKiosk } from '../kioskSlice'
+import * as kioskAPI from '../kioskAPI'
+import type { KioskDetail, KioskHeartbeatResponse } from '../kioskAPI'
 import { buildCreateKioskPayload } from '../../merchants/merchantAPI'
 import { ROUTES } from '../../../core/config/routes'
 import { ROLES, canManageKiosks } from '../../../core/constants/roles'
-import { KioskCard } from '../components/KioskCard'
+import { formatDisplayDate } from '../../../core/utils/helpers'
+import { getApiErrorMessage } from '../../../core/api/parseApiError'
 import '../../../layout/Layout.css'
+import '../../merchants/pages/MerchantList.css'
 import './KioskList.css'
 
-const PAGE_SIZE = 20
-const POLL_MS = 25_000
 const SCOPE_STORAGE_KEY = 'fp_kiosk_scope_merchant_id'
 
 export function KioskList() {
@@ -19,12 +20,6 @@ export function KioskList() {
   const navigate = useNavigate()
   const user = useAppSelector((s) => s.auth.user)
   const canMutate = canManageKiosks(user?.role)
-
-  const list = useAppSelector((s) => s.kiosks.list)
-  const listMeta = useAppSelector((s) => s.kiosks.listMeta)
-  const loading = useAppSelector((s) => s.kiosks.loadingList)
-  const error = useAppSelector((s) => s.kiosks.error)
-
   const isMerchantAdmin = user?.role === ROLES.MERCHANT_ADMIN
 
   const [scopeMerchantIdInput, setScopeMerchantIdInput] = useState(() => {
@@ -39,10 +34,20 @@ export function KioskList() {
     ? (user?.merchantId?.trim() || scopeMerchantIdInput.trim() || undefined)
     : undefined
 
-  const [page, setPage] = useState(1)
-  const [qInput, setQInput] = useState('')
-  const debouncedQ = useDebouncedValue(qInput, 400)
-  const [network, setNetwork] = useState<'online' | 'offline' | ''>('')
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SCOPE_STORAGE_KEY, scopeMerchantIdInput)
+    } catch {
+      /* ignore */
+    }
+  }, [scopeMerchantIdInput])
+
+  const [kioskIdInput, setKioskIdInput] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<KioskDetail | null>(null)
+  const [heartbeat, setHeartbeat] = useState<KioskHeartbeatResponse | null>(null)
+  const [heartbeatError, setHeartbeatError] = useState<string | null>(null)
 
   const [addOpen, setAddOpen] = useState(false)
   const [addSubmitting, setAddSubmitting] = useState(false)
@@ -52,53 +57,6 @@ export function KioskList() {
   const [kOnline, setKOnline] = useState(true)
   const [kFace, setKFace] = useState('ok')
   const [kCam, setKCam] = useState('ok')
-
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(SCOPE_STORAGE_KEY, scopeMerchantIdInput)
-    } catch {
-      /* ignore */
-    }
-  }, [scopeMerchantIdInput])
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedQ, network])
-
-  useEffect(() => {
-    if (isMerchantAdmin && !scopedListId) {
-      return
-    }
-    void dispatch(
-      loadKiosks({
-        page,
-        pageSize: PAGE_SIZE,
-        q: debouncedQ,
-        network,
-        merchantScopeId: scopedListId,
-      })
-    )
-  }, [dispatch, page, debouncedQ, network, scopedListId, isMerchantAdmin])
-
-  useEffect(() => {
-    if (isMerchantAdmin && !scopedListId) {
-      return
-    }
-    const t = window.setInterval(() => {
-      void dispatch(
-        loadKiosks({
-          page,
-          pageSize: PAGE_SIZE,
-          q: debouncedQ,
-          network,
-          merchantScopeId: scopedListId,
-        })
-      )
-    }, POLL_MS)
-    return () => window.clearInterval(t)
-  }, [dispatch, page, debouncedQ, network, scopedListId, isMerchantAdmin])
 
   useEffect(() => {
     if (!addOpen) return
@@ -110,15 +68,47 @@ export function KioskList() {
     setKioskMerchantId(initial)
   }, [addOpen, user?.merchantId, scopeMerchantIdInput])
 
-  function openDetail(id: string) {
-    navigate(ROUTES.KIOSK_DETAIL.replace(':kioskId', id))
+  async function runSearch(e?: FormEvent) {
+    e?.preventDefault()
+    const id = kioskIdInput.trim()
+    if (!id) {
+      setSearchError('Enter a kiosk id (UUID).')
+      return
+    }
+    if (isMerchantAdmin && !scopedListId) {
+      setSearchError('Set your portal merchant id below (row id) so kiosk lookup can fall back if needed.')
+      return
+    }
+    setSearchError(null)
+    setHeartbeatError(null)
+    setHeartbeat(null)
+    setDetail(null)
+    setSearchLoading(true)
+    try {
+      const k = await kioskAPI.fetchKioskById(id, scopedListId ?? null)
+      setDetail(k)
+      try {
+        const hb = await kioskAPI.sendKioskHeartbeat(id, {
+          is_online: k.isOnline,
+          face_status: k.faceStatus,
+          camera_status: k.cameraStatusLabel || k.cameraStatus,
+        })
+        setHeartbeat(hb)
+      } catch (he) {
+        setHeartbeatError(getApiErrorMessage(he))
+      }
+    } catch (err) {
+      setSearchError(getApiErrorMessage(err))
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
-  async function handleAddKiosk(e: FormEvent) {
-    e.preventDefault()
+  async function handleAddKiosk(ev: FormEvent) {
+    ev.preventDefault()
     const targetMerchantId = kioskMerchantId.trim()
     if (!targetMerchantId) {
-      setAddError('Enter the merchant ID for this kiosk (UUID, number, or string from your portal).')
+      setAddError('Enter the portal merchant row id (see hint below).')
       return
     }
     if (!kSerial.trim()) {
@@ -134,15 +124,6 @@ export function KioskList() {
           payload: buildCreateKioskPayload(kSerial.trim(), kOnline, kFace, kCam),
         })
       ).unwrap()
-      await dispatch(
-        loadKiosks({
-          page,
-          pageSize: PAGE_SIZE,
-          q: debouncedQ,
-          network,
-          merchantScopeId: isMerchantAdmin ? scopedListId : undefined,
-        })
-      ).unwrap()
       setAddOpen(false)
       setKSerial('')
       setKOnline(true)
@@ -155,23 +136,8 @@ export function KioskList() {
     }
   }
 
-  async function handleDelete(kioskId: string, merchantId: string, label: string) {
-    if (!window.confirm(`Delete kiosk ${label}?`)) return
-    setDeletingId(kioskId)
-    try {
-      await dispatch(removeKiosk({ merchantId, kioskId })).unwrap()
-    } catch {
-      /* slice */
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
-  const { page: curPage, pageSize, totalItems, totalPages } = listMeta
-  const start = totalItems === 0 ? 0 : (curPage - 1) * pageSize + 1
-  const end = Math.min(curPage * pageSize, totalItems)
-  const onlineOnPage = list.filter((k) => k.networkStatus === 'ONLINE').length
-  const offlineOnPage = list.filter((k) => k.networkStatus === 'OFFLINE').length
+  const hbTime = heartbeat?.server_timestamp ?? heartbeat?.timestamp
+  const hbAck = heartbeat?.acknowledged ?? heartbeat?.ack
 
   return (
     <div className="kiosk-list page-shell">
@@ -180,9 +146,9 @@ export function KioskList() {
           <p className="page-kicker">Fleet</p>
           <h1 className="page-title">Kiosk inventory</h1>
           <p className="page-desc">
-            {isMerchantAdmin
-              ? `Enter your merchant ID below to load kiosks (GET /merchants/{merchant_id}/kiosks). Same ID is used when registering a device. Refreshes every ${POLL_MS / 1000}s.`
-              : `Live data from GET /kiosks when available. Refreshes every ${POLL_MS / 1000}s.`}
+            Search by kiosk id, then view device fields and the latest <code>POST /kiosks/{"{id}"}/heartbeat</code> ack.
+            Register requires the merchant <strong>portal row id</strong> (not the external <code>merchant_id</code>{' '}
+            field).
           </p>
         </div>
         <div className="kiosk-list__actions">
@@ -195,219 +161,150 @@ export function KioskList() {
       </header>
 
       {isMerchantAdmin && !user?.merchantId ? (
-        <p className="kiosk-list__banner kiosk-list__banner--info" role="note">
-          <strong>Tip:</strong> If login does not return a merchant id, type your merchant ID in the field below (and in
-          the register form) so the app can call the correct API paths.
-        </p>
-      ) : null}
-
-      {error ? (
-        <p className="kiosk-list__banner kiosk-list__banner--error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {isMerchantAdmin && !scopedListId ? (
-        <p className="kiosk-list__banner kiosk-list__banner--warn" role="status">
-          Enter your <strong>merchant ID</strong> below to load this merchant’s kiosks. The table stays empty until
-          a valid ID is set.
-        </p>
-      ) : null}
-
-      <section className="kiosk-list__stats" aria-label="Kiosk summary">
-        <article className="kiosk-list__stat card-surface">
-          <h2 className="kiosk-list__stat-label">Total kiosks</h2>
-          <p className="kiosk-list__stat-value">{totalItems.toLocaleString()}</p>
-          <span className="kiosk-list__chip kiosk-list__chip--ok">API total</span>
-        </article>
-        <article className="kiosk-list__stat card-surface">
-          <h2 className="kiosk-list__stat-label">Online (this page)</h2>
-          <p className="kiosk-list__stat-value">{onlineOnPage}</p>
-          <span className="kiosk-list__dot-live" aria-hidden />
-        </article>
-        <article className="kiosk-list__stat card-surface">
-          <h2 className="kiosk-list__stat-label">Offline (this page)</h2>
-          <p className="kiosk-list__stat-value">{offlineOnPage}</p>
-          <span className="kiosk-list__priority">Review</span>
-        </article>
-        <article className="kiosk-list__stat card-surface">
-          <h2 className="kiosk-list__stat-label">Page</h2>
-          <p className="kiosk-list__stat-value">
-            {curPage} / {Math.max(1, totalPages)}
-          </p>
-          <span className="kiosk-list__chip kiosk-list__chip--ok">{pageSize} / page</span>
-        </article>
-      </section>
-
-      {isMerchantAdmin ? (
-        <section className="kiosk-list__scope card-surface" aria-label="Merchant scope">
+        <section className="kiosk-list__scope-compact card-surface" aria-label="Merchant scope">
           <label className="kiosk-list__scope-label">
-            <span className="kiosk-list__field-label">Merchant ID (load fleet)</span>
+            <span className="kiosk-list__field-label">Portal merchant id (for lookup fallback)</span>
             <input
               className="kiosk-list__input"
               type="text"
               value={scopeMerchantIdInput}
               onChange={(e) => setScopeMerchantIdInput(e.target.value)}
-              placeholder="Paste UUID, number, or string id"
+              placeholder="Row id from GET /merchants (id), same as kiosk registration path"
               autoComplete="off"
             />
           </label>
           <p className="kiosk-list__scope-hint">
-            Saved in this browser session. Path segment is the portal merchant <code>id</code> (same as kiosk registration).
+            Needed when <code>GET /kiosks/{"{id}"}</code> is unavailable and the app resolves the device via{' '}
+            <code>GET /merchants/{"{id}"}/kiosks</code>.
           </p>
         </section>
       ) : null}
 
-      <section className="kiosk-list__toolbar card-surface" aria-label="Search and filters">
-        <label className="kiosk-list__field">
-          <span className="kiosk-list__field-label">Search</span>
+      <form className="kiosk-list__search card-surface" onSubmit={runSearch} aria-label="Search kiosk">
+        <label className="kiosk-list__search-label" htmlFor="kiosk-id-search">
+          Search kiosk
+        </label>
+        <div className="kiosk-list__search-row">
           <input
-            className="kiosk-list__input"
+            id="kiosk-id-search"
+            className="kiosk-list__search-input"
             type="search"
-            placeholder="Serial ID"
-            value={qInput}
-            onChange={(e) => setQInput(e.target.value)}
+            placeholder="Kiosk UUID…"
+            value={kioskIdInput}
+            onChange={(e) => setKioskIdInput(e.target.value)}
             autoComplete="off"
           />
-        </label>
-        <label className="kiosk-list__field">
-          <span className="kiosk-list__field-label">Connectivity</span>
-          <select className="kiosk-list__input" value={network} onChange={(e) => setNetwork(e.target.value as typeof network)}>
-            <option value="">All</option>
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-          </select>
-        </label>
-      </section>
-
-      <section className="kiosk-list__panel card-surface" aria-labelledby="kiosk-inv-title">
-        <h2 id="kiosk-inv-title" className="visually-hidden">
-          Kiosk inventory table
-        </h2>
-        {loading && isMerchantAdmin && scopedListId ? (
-          <p className="kiosk-list__loading" role="status">
-            Loading kiosks…
+          <button type="submit" className="btn btn--primary btn--sm" disabled={searchLoading}>
+            {searchLoading ? 'Searching…' : 'Search'}
+          </button>
+        </div>
+        <p className="kiosk-list__search-hint">
+          Uses <code>GET /kiosks/{"{kiosk_id}"}</code>, then sends a heartbeat with the loaded status values.
+        </p>
+        {searchError ? (
+          <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+            {searchError}
           </p>
         ) : null}
-        {loading && !isMerchantAdmin ? (
-          <p className="kiosk-list__loading" role="status">
-            Loading kiosks…
-          </p>
-        ) : null}
-        <div className="kiosk-list__cards">
-          {list.map((k) => (
-            <KioskCard key={k.id} kiosk={k} onOpen={openDetail} />
-          ))}
-        </div>
-        <div className="kiosk-list__scroll">
-          <table className="kiosk-list__table">
-            <thead>
-              <tr>
-                <th scope="col">Serial ID</th>
-                <th scope="col">Location</th>
-                <th scope="col">Network status</th>
-                <th scope="col">Health check</th>
-                <th scope="col">Last sync</th>
-                <th scope="col">
-                  <span className="visually-hidden">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((k) => (
-                <tr key={k.id}>
-                  <td>
-                    <button type="button" className="kiosk-list__id-btn" onClick={() => openDetail(k.id)}>
-                      {k.serialId}
-                    </button>
-                  </td>
-                  <td>{k.location}</td>
-                  <td>
-                    <span className={`kiosk-list__pill kiosk-list__pill--${k.networkStatus.toLowerCase()}`}>
-                      {k.networkStatus}
-                    </span>
-                  </td>
-                  <td>
-                    {k.healthPct}% · {k.healthLabel}
-                  </td>
-                  <td>{k.lastSync}</td>
-                  <td>
-                    {canMutate ? (
-                      <button
-                        type="button"
-                        className="kiosk-list__kebab"
-                        disabled={deletingId === k.id}
-                        aria-label={`Delete ${k.serialId}`}
-                        title="Delete kiosk"
-                        onClick={() => handleDelete(k.id, k.merchantId, k.serialId)}
-                      >
-                        {deletingId === k.id ? '…' : '✕'}
-                      </button>
-                    ) : (
-                      <span className="kiosk-list__muted">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <footer className="kiosk-list__footer">
-          <span>
-            Showing {start}–{end} of {totalItems.toLocaleString()} results
-          </span>
-          <nav className="kiosk-list__pager" aria-label="Pagination">
-            <button
-              type="button"
-              disabled={curPage <= 1 || loading}
-              aria-label="Previous page"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              ‹
-            </button>
-            <button type="button" className="kiosk-list__page-active" aria-current="page">
-              {curPage}
-            </button>
-            <button
-              type="button"
-              disabled={curPage >= totalPages || loading || totalPages === 0}
-              aria-label="Next page"
-              onClick={() => setPage((p) => p + 1)}
-            >
-              ›
-            </button>
-          </nav>
-        </footer>
-      </section>
+      </form>
 
-      {canMutate ? (
-        <button type="button" className="kiosk-list__fab" aria-label="Register kiosk" onClick={() => setAddOpen(true)}>
-          +
-        </button>
+      {detail ? (
+        <section className="kiosk-list__result card-surface" aria-labelledby="kiosk-result-title">
+          <header className="kiosk-list__result-head">
+            <h2 id="kiosk-result-title" className="kiosk-list__result-title">
+              {detail.title}
+            </h2>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => navigate(ROUTES.KIOSK_DETAIL.replace(':kioskId', detail.id))}
+            >
+              Open full page
+            </button>
+          </header>
+          <dl className="kiosk-list__result-dl">
+            <dt>Kiosk id</dt>
+            <dd>
+              <code>{detail.id}</code>
+            </dd>
+            <dt>Merchant id</dt>
+            <dd>
+              <code>{detail.merchantId}</code>
+            </dd>
+            <dt>Serial</dt>
+            <dd>{detail.serialId}</dd>
+            <dt>Network</dt>
+            <dd>
+              <span className={`kiosk-list__pill kiosk-list__pill--${detail.networkStatus.toLowerCase()}`}>
+                {detail.networkStatus}
+              </span>
+            </dd>
+            <dt>Face</dt>
+            <dd>{detail.faceStatus}</dd>
+            <dt>Camera</dt>
+            <dd>{detail.cameraStatusLabel}</dd>
+            <dt>Health</dt>
+            <dd>
+              {detail.healthPct}% · {detail.healthLabel}
+            </dd>
+            <dt>Last sync</dt>
+            <dd>{detail.lastSync}</dd>
+          </dl>
+
+          <div className="kiosk-list__hb card-surface">
+            <h3 className="kiosk-list__hb-title">Heartbeat response</h3>
+            <p className="kiosk-list__hb-sub">
+              <code>POST /kiosks/{"{kiosk_id}"}/heartbeat</code> (no auth) — body mirrors current device fields.
+            </p>
+            {heartbeatError ? (
+              <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+                {heartbeatError}
+              </p>
+            ) : heartbeat ? (
+              <dl className="kiosk-list__result-dl">
+                <dt>Acknowledged</dt>
+                <dd>{hbAck === undefined ? '—' : String(hbAck)}</dd>
+                {hbTime ? (
+                  <>
+                    <dt>Server time</dt>
+                    <dd>
+                      <time dateTime={hbTime}>{formatDisplayDate(hbTime)}</time>
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
+            ) : null}
+          </div>
+        </section>
       ) : null}
 
       {addOpen ? (
         <div className="kiosk-list__modal-root">
-          <button type="button" className="kiosk-list__backdrop" aria-label="Close" onClick={() => !addSubmitting && setAddOpen(false)} />
+          <button
+            type="button"
+            className="kiosk-list__backdrop"
+            aria-label="Close"
+            onClick={() => !addSubmitting && setAddOpen(false)}
+          />
           <div className="kiosk-list__modal card-surface" role="dialog" aria-modal="true">
             <h2 className="kiosk-list__modal-title">Register kiosk</h2>
             <form onSubmit={handleAddKiosk} className="kiosk-list__modal-form">
               <label className="kiosk-list__label">
-                Merchant ID
+                Portal merchant id (row id)
                 <input
                   className="kiosk-list__input"
                   required
                   value={kioskMerchantId}
                   onChange={(e) => setKioskMerchantId(e.target.value)}
-                  placeholder="UUID, number, or string — path to POST /merchants/{id}/kiosks"
+                  placeholder="e.g. c36bea36-eb90-4daf-90b5-b3b924c39b26"
                   autoComplete="off"
                 />
               </label>
               <p className="kiosk-list__modal-hint">
-                Must be the <strong>Support Portal merchant primary key</strong> (the <code>id</code> returned from{' '}
-                <code>POST /merchants</code>), not an id from another database. If the API responds with &quot;Merchant
-                not found&quot;, this UUID is not in the portal—create the merchant here first or copy the id from the
-                green banner on the Merchants page after onboarding.
+                Path is <code>POST /merchants/{"{id}"}/kiosks</code> where <code>{"{id}"}</code> is the merchant row’s{' '}
+                <strong>id</strong> from the API (returned by <code>POST /merchants</code>). Do <strong>not</strong> use
+                the separate <code>merchant_id</code> field if it differs—that value is an external reference; using it
+                causes &quot;Merchant not found&quot;.
               </p>
               <label className="kiosk-list__label">
                 Serial ID

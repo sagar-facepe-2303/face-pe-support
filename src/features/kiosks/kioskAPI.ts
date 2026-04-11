@@ -40,8 +40,11 @@ export interface KioskHeartbeatRequest {
 }
 
 export interface KioskHeartbeatResponse {
-  acknowledged: boolean
-  server_timestamp: string
+  acknowledged?: boolean
+  server_timestamp?: string
+  /** Alternate names some gateways may use */
+  ack?: boolean
+  timestamp?: string
 }
 
 export interface ListKiosksParams {

@@ -201,8 +201,9 @@ export function KioskDetails() {
       </section>
 
       <p className="kiosk-details__note">
-        Charts and transaction history are not part of the current Support Portal API handoff; this screen focuses on
-        kiosk status fields returned by <code>GET /kiosks/{"{id}"}</code>.
+        Devices report liveness with <code>POST /kiosks/{"{kiosk_id}"}/heartbeat</code> (no auth; body:{' '}
+        <code>is_online</code>, <code>face_status</code>, <code>camera_status</code>). This admin UI loads data via
+        authenticated merchant/kiosk routes. Charts and transaction history are not part of the current API handoff.
       </p>
 
       {editOpen ? (

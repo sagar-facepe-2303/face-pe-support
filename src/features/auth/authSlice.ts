@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import * as authAPI from './authAPI'
-import type { LoginPayload, RegisterPayload } from './authAPI'
+import type { LoginPayload } from './authAPI'
 import type { AuthState, AuthUser } from './types'
 
 const initialState: AuthState = {
@@ -19,18 +19,6 @@ export const login = createAsyncThunk(
       return await authAPI.loginRequest(payload)
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Sign in failed'
-      return rejectWithValue(message)
-    }
-  }
-)
-
-export const register = createAsyncThunk(
-  'auth/register',
-  async (payload: RegisterPayload, { rejectWithValue }) => {
-    try {
-      return await authAPI.registerRequest(payload)
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Registration failed'
       return rejectWithValue(message)
     }
   }
@@ -74,20 +62,6 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.status = 'failed'
         state.error = (action.payload as string) ?? 'Sign in failed'
-      })
-      .addCase(register.pending, (state) => {
-        state.status = 'loading'
-        state.error = null
-      })
-      .addCase(register.fulfilled, (state, action) => {
-        state.status = 'succeeded'
-        state.user = action.payload.user
-        state.token = action.payload.token
-        state.refreshToken = action.payload.refreshToken
-      })
-      .addCase(register.rejected, (state, action) => {
-        state.status = 'failed'
-        state.error = (action.payload as string) ?? 'Registration failed'
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null

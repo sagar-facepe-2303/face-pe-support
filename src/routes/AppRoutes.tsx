@@ -5,7 +5,6 @@ import { ROLES } from '../core/constants/roles'
 import { ProtectedRoute } from './ProtectedRoute'
 
 import { Login } from '../features/auth/pages/Login'
-import { Register } from '../features/auth/pages/Register'
 import { Dashboard } from '../features/supportTeam/pages/Dashboard'
 import { Users as SupportTeamPage } from '../features/supportTeam/pages/Users'
 import { CreateSupportAdmin } from '../features/supportTeam/pages/CreateSupportAdmin'
@@ -24,7 +23,6 @@ export function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path={ROUTES.LOGIN} element={<Login />} />
-        <Route path={ROUTES.REGISTER} element={<Register />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>

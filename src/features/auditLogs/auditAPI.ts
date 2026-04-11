@@ -1,4 +1,5 @@
 import api from '../../core/api/axios'
+import { parsePagedResponse, type Paged } from '../../core/api/pagination'
 
 export interface AuditLogRow {
   id: string
@@ -9,8 +10,8 @@ export interface AuditLogRow {
   severity: 'info' | 'warning' | 'critical'
 }
 
-export interface PaginatedAuditLogResponse {
-  items: Array<{
+function mapAuditRaw(raw: unknown): AuditLogRow {
+  const item = raw as {
     id: string
     actor_name?: string
     actor_role?: string
@@ -18,26 +19,24 @@ export interface PaginatedAuditLogResponse {
     target_entity?: string
     created_at: string
     severity?: 'info' | 'warning' | 'critical'
-  }>
-  page: number
-  page_size: number
-  total_pages: number
-  total_items: number
-}
-
-export async function fetchAuditLogs(page = 1, pageSize = 20): Promise<AuditLogRow[]> {
-  const response = await api.get<PaginatedAuditLogResponse>('/audit-logs', {
-    params: {
-      page,
-      page_size: pageSize,
-    },
-  })
-  return response.data.items.map((item) => ({
+  }
+  return {
     id: item.id,
     actor: item.actor_name ?? item.actor_role ?? 'System',
     action: item.action_type,
     resource: item.target_entity ?? '—',
     at: item.created_at,
     severity: item.severity ?? 'info',
-  }))
+  }
+}
+
+/** `GET /audit-logs` — `page` ≥ 1, `page_size` 1–100 per API reference. */
+export async function fetchAuditLogsPaged(page: number, pageSize: number): Promise<Paged<AuditLogRow>> {
+  const response = await api.get<unknown>('/audit-logs', {
+    params: {
+      page,
+      page_size: Math.min(100, Math.max(1, pageSize)),
+    },
+  })
+  return parsePagedResponse(response.data, mapAuditRaw)
 }

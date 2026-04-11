@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useId, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { clearError, login } from "../authSlice";
 import { ROUTES } from "../../../core/config/routes";
@@ -155,10 +155,6 @@ export function Login() {
           >
             {status === "loading" ? "Signing in…" : "Sign In to Workspace"} →
           </button>
-
-          <p className="login-page__switch">
-            New to FacePe? <Link to={ROUTES.REGISTER}>Create workspace</Link>
-          </p>
         </AuthForm>
       </div>
 

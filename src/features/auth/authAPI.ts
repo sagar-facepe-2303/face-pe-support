@@ -1,5 +1,4 @@
 import api from '../../core/api/axios'
-import { ROLES } from '../../core/constants/roles'
 import type { Role } from '../../core/constants/roles'
 import type { AuthUser } from './types'
 
@@ -7,14 +6,6 @@ export interface LoginPayload {
   email: string
   password: string
   rememberDevice?: boolean
-}
-
-export interface RegisterPayload {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  accountType: 'merchant' | 'kiosk_operator'
 }
 
 interface LoginResponseShape {
@@ -91,31 +82,6 @@ export async function refreshRequest(refreshToken: string): Promise<{ token: str
     token: response.data.access_token,
     refreshToken: response.data.refresh_token,
   }
-}
-
-/**
- * Backend has no public register endpoint for support portal.
- * This keeps the current Register page usable by calling the bootstrap helper.
- */
-export async function registerRequest(payload: RegisterPayload): Promise<{
-  user: AuthUser
-  token: string
-  refreshToken: string
-}> {
-  await api.post('/support-users/seed-super-admin', {
-    name: `${payload.firstName} ${payload.lastName}`.trim(),
-    email: payload.email,
-    password: payload.password,
-  })
-
-  const login = await loginRequest({ email: payload.email, password: payload.password })
-  const user: AuthUser = {
-    id: login.user.id,
-    email: payload.email,
-    name: `${payload.firstName} ${payload.lastName}`.trim(),
-    role: payload.accountType === 'kiosk_operator' ? ROLES.MERCHANT_SUPPORT : ROLES.MERCHANT_ADMIN,
-  }
-  return { user, token: login.token, refreshToken: login.refreshToken }
 }
 
 export async function logoutRequest(refreshToken: string | null): Promise<void> {
