@@ -64,27 +64,76 @@ function normalizeSupportUser(raw: unknown): SupportUserResponse {
   }
 }
 
+export interface SupportUsersListParams {
+  /** Min 1, max 100 */
+  limit?: number
+  /** Min 0 */
+  offset?: number
+  role?: Role
+  is_active?: boolean
+}
+
+export interface SupportUsersListResult {
+  items: SupportUserResponse[]
+  total: number
+  limit: number
+  offset: number
+}
+
+function clampLimit(raw: number | undefined): number {
+  const n = raw ?? 50
+  return Math.min(100, Math.max(1, n))
+}
+
+function clampOffset(raw: number | undefined): number {
+  return Math.max(0, raw ?? 0)
+}
+
 /**
- * Lists support portal operators when `GET /support-users` is available (array or `{ items }`).
- * Returns [] on 404/405 so the page can still show invite flows.
+ * Lists support portal operators via `GET /support-users` (paginated `{ items, total, limit, offset }`
+ * or legacy array). Returns empty result on 404/405 so invite flows still work when the route is absent.
  */
-export async function fetchSupportUsersList(): Promise<SupportUserResponse[]> {
+export async function fetchSupportUsersList(
+  params: SupportUsersListParams = {}
+): Promise<SupportUsersListResult> {
+  const limit = clampLimit(params.limit)
+  const offset = clampOffset(params.offset)
+  const query: Record<string, string | number | boolean> = { limit, offset }
+  if (params.role) query.role = params.role
+  if (params.is_active !== undefined) query.is_active = params.is_active
+
   try {
-    const response = await api.get<unknown>('/support-users')
+    const response = await api.get<unknown>('/support-users', { params: query })
     const data = response.data
     if (Array.isArray(data)) {
-      return data.map(normalizeSupportUser)
-    }
-    if (data && typeof data === 'object' && 'items' in data) {
-      const items = (data as { items: unknown }).items
-      if (Array.isArray(items)) {
-        return items.map(normalizeSupportUser)
+      const items = data.map(normalizeSupportUser)
+      return {
+        items,
+        total: items.length,
+        limit,
+        offset,
       }
     }
-    return []
+    if (data && typeof data === 'object' && 'items' in data) {
+      const d = data as {
+        items: unknown
+        total?: unknown
+        limit?: unknown
+        offset?: unknown
+      }
+      const rawItems = d.items
+      const items = Array.isArray(rawItems) ? rawItems.map(normalizeSupportUser) : []
+      return {
+        items,
+        total: typeof d.total === 'number' ? d.total : items.length,
+        limit: typeof d.limit === 'number' ? d.limit : limit,
+        offset: typeof d.offset === 'number' ? d.offset : offset,
+      }
+    }
+    return { items: [], total: 0, limit, offset }
   } catch (e) {
     if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
-      return []
+      return { items: [], total: 0, limit, offset }
     }
     throw e
   }

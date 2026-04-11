@@ -3,6 +3,8 @@
   max-width: 90rem;
   margin: 0 auto;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -42,6 +44,11 @@
   color: var(--text-secondary);
   font-size: var(--body-sm);
   max-width: 40rem;
+}
+
+.page-desc__lead {
+  color: var(--on-surface);
+  font-weight: 600;
 }
 
 .card-surface {
