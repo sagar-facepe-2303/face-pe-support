@@ -12,7 +12,7 @@ import '../../merchants/pages/MerchantList.css'
 import './UserDetails.css'
 
 export function UserDetails() {
-  const { userId } = useParams<{ userId: string }>()
+  const { userPhone } = useParams<{ userPhone: string }>()
   const dispatch = useAppDispatch()
   const user = useAppSelector((s) => s.users.current)
   const transactions = useAppSelector((s) => s.users.transactions)
@@ -27,16 +27,16 @@ export function UserDetails() {
   const [otpLocalError, setOtpLocalError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (userId) {
-      dispatch(loadUserDetail(userId))
+    if (userPhone) {
+      dispatch(loadUserDetail(userPhone))
     }
     return () => {
       dispatch(clearUserDetail())
     }
-  }, [dispatch, userId])
+  }, [dispatch, userPhone])
 
-  if (!userId) {
-    return <p role="alert">Missing user identifier.</p>
+  if (!userPhone) {
+    return <p role="alert">Missing user phone (path segment).</p>
   }
 
   if (loading && !user) {
@@ -51,11 +51,11 @@ export function UserDetails() {
     Boolean(error && !user && (detailLoadHttpStatus === 401 || detailLoadHttpStatus === 403))
 
   async function sendReadOtp() {
-    if (!userId) return
+    if (!userPhone) return
     setOtpSending(true)
     setOtpLocalError(null)
     try {
-      const r = await userAPI.sendUserOtp('read_user', userId)
+      const r = await userAPI.sendUserOtp('read_user', userPhone)
       setOtpSessionId(r.session_id)
     } catch (err) {
       setOtpLocalError(getApiErrorMessage(err))
@@ -65,7 +65,7 @@ export function UserDetails() {
   }
 
   async function verifyOtpAndReload() {
-    if (!userId || !otpSessionId) {
+    if (!userPhone || !otpSessionId) {
       setOtpLocalError('Send a verification code first.')
       return
     }
@@ -82,7 +82,7 @@ export function UserDetails() {
         setOtpLocalError('Verification did not return a token. Try again.')
         return
       }
-      await dispatch(loadUserDetail({ id: userId, otpToken: token })).unwrap()
+      await dispatch(loadUserDetail({ id: userPhone, otpToken: token })).unwrap()
       setOtpSessionId(null)
       setOtpCode('')
     } catch (err) {
@@ -102,9 +102,9 @@ export function UserDetails() {
           {error}
         </p>
         <p className="user-details__otp-intro">
-          Reading an end-customer profile requires email verification in addition to your login. Use{' '}
-          <code>read_user</code> OTP first. Update and delete require separate OTP challenges (
-          <code>update_user</code>, <code>delete_user</code>).
+          Profile URL uses <code>GET /users/{"{user_phone}"}</code>. Sending a code uses{' '}
+          <code>target_user_phone</code> for this number. Use <code>read_user</code> OTP before loading; update/delete
+          need <code>update_user</code> / <code>delete_user</code> OTP separately.
         </p>
         <div className="merchant-list__otp card-surface" role="region" aria-label="Verify user read access">
           <p className="merchant-list__otp-title">Verify access</p>

@@ -4,7 +4,7 @@ import { isAxiosError } from 'axios'
 import { useAppSelector } from '../../../app/hooks'
 import * as userAPI from '../userAPI'
 import type { PlatformUserDetail } from '../userAPI'
-import { ROUTES } from '../../../core/config/routes'
+import { hrefUserProfileByPhone } from '../../../core/config/routes'
 import { canMutateUsers } from '../../../core/constants/roles'
 import { formatDisplayDate } from '../../../core/utils/helpers'
 import { getApiErrorMessage } from '../../../core/api/parseApiError'
@@ -17,7 +17,9 @@ export function UserList() {
   const user = useAppSelector((s) => s.auth.user)
   const canCreate = canMutateUsers(user?.role)
 
-  const [userIdInput, setUserIdInput] = useState('')
+  const [userPhoneInput, setUserPhoneInput] = useState('')
+  /** Phone string used in the last successful `GET /users/{user_phone}` (for deep links). */
+  const [profileLookupKey, setProfileLookupKey] = useState<string | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [result, setResult] = useState<PlatformUserDetail | null>(null)
@@ -28,6 +30,9 @@ export function UserList() {
   const [otpSending, setOtpSending] = useState(false)
   const [otpVerifying, setOtpVerifying] = useState(false)
   const [otpLocalError, setOtpLocalError] = useState<string | null>(null)
+  /** Cached read_user OTP for the current phone (avoids GET without X-OTP-Token and skips re-verify on repeat Search). */
+  const [readOtpToken, setReadOtpToken] = useState<string | null>(null)
+  const [readOtpPhone, setReadOtpPhone] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [seedUserId, setSeedUserId] = useState('')
@@ -38,28 +43,51 @@ export function UserList() {
   const [seedError, setSeedError] = useState<string | null>(null)
   const [seedSuccess, setSeedSuccess] = useState<userAPI.SeedCustomerUserResponse | null>(null)
 
-  async function loadProfile(otpToken?: string | null) {
-    const id = userIdInput.trim()
-    if (!id) {
-      setSearchError('Enter a user id (UUID).')
+  async function loadProfile(otpTokenOverride?: string | null) {
+    const phone = userPhoneInput.trim()
+    if (!phone) {
+      setSearchError('Enter the customer mobile number (user_phone).')
       return
     }
+
+    const token =
+      otpTokenOverride !== undefined && otpTokenOverride !== null && String(otpTokenOverride).trim() !== ''
+        ? String(otpTokenOverride).trim()
+        : readOtpPhone === phone && readOtpToken
+          ? readOtpToken
+          : null
+
+    if (!token) {
+      setSearchError(null)
+      setOtpLocalError(null)
+      setOtpHint(true)
+      setResult(null)
+      setProfileLookupKey(null)
+      return
+    }
+
     setSearchError(null)
     setOtpLocalError(null)
     setSearchLoading(true)
     try {
-      const { user: u } = await userAPI.fetchUserProfile(id, otpToken)
+      const { user: u } = await userAPI.fetchUserProfile(phone, token)
       setResult(u)
+      setProfileLookupKey(phone)
+      setReadOtpToken(token)
+      setReadOtpPhone(phone)
       setOtpHint(false)
       setOtpSessionId(null)
       setOtpCode('')
     } catch (e) {
       setResult(null)
+      setProfileLookupKey(null)
       const st = isAxiosError(e) ? e.response?.status : undefined
-      if ((st === 403 || st === 401) && !otpToken) {
+      if (st === 403 || st === 401) {
+        setReadOtpToken(null)
+        setReadOtpPhone(null)
         setOtpHint(true)
         setSearchError(
-          'Reading this profile requires email verification (read_user OTP) in addition to your login.'
+          'Could not load this profile (login or read_user OTP invalid/expired). Send a new code and verify again.'
         )
       } else {
         setSearchError(getApiErrorMessage(e))
@@ -75,15 +103,15 @@ export function UserList() {
   }
 
   async function handleSendOtp() {
-    const id = userIdInput.trim()
-    if (!id) {
-      setOtpLocalError('Enter a user id above first.')
+    const phone = userPhoneInput.trim()
+    if (!phone) {
+      setOtpLocalError('Enter the customer phone number above first (same as in the URL path).')
       return
     }
     setOtpSending(true)
     setOtpLocalError(null)
     try {
-      const r = await userAPI.sendUserOtp('read_user', id)
+      const r = await userAPI.sendUserOtp('read_user', phone)
       setOtpSessionId(r.session_id)
     } catch (err) {
       setOtpLocalError(getApiErrorMessage(err))
@@ -143,7 +171,9 @@ export function UserList() {
       setSeedUserName('')
       setSeedUserEmail('')
       setSeedUserPhone('')
-      setUserIdInput(created.user_id)
+      setUserPhoneInput(created.user_phone)
+      setReadOtpToken(null)
+      setReadOtpPhone(null)
     } catch (err) {
       setSeedError(getApiErrorMessage(err))
     } finally {
@@ -160,9 +190,10 @@ export function UserList() {
           <p className="page-kicker">End customers</p>
           <h1 className="page-title">User directory</h1>
           <p className="page-desc">
-            Look up an end-customer by Support Portal <strong>user id</strong> (<code>GET /users/{"{user_id}"}</code>).
-            Super admin and user admin can <strong>create end customers</strong> with the button below (
-            <code>POST /test/seed-user</code>).
+            Look up an end-customer by <strong>mobile number</strong> — <code>GET /users/{"{user_phone}"}</code> (e.g.{' '}
+            <code>+919307448743</code>). Roles: <strong>super admin</strong>, <strong>user admin</strong>,{' '}
+            <strong>user support</strong>. Creating customers uses <code>POST /test/seed-user</code> (super / user admin
+            only).
           </p>
         </div>
         <div className="user-list__actions">
@@ -206,20 +237,25 @@ export function UserList() {
       ) : null}
 
       <form className="user-list__search card-surface" aria-label="Search user" onSubmit={handleSearchSubmit}>
-        <label className="user-list__search-label" htmlFor="user-id-search">
-          Search by user id
+        <label className="user-list__search-label" htmlFor="user-phone-search">
+          Search by mobile (user_phone)
         </label>
         <div className="user-list__search-row">
           <input
-            id="user-id-search"
+            id="user-phone-search"
             className="user-list__search-input"
             type="search"
-            placeholder="End-customer UUID (user_id)…"
-            value={userIdInput}
+            placeholder="+919307448743"
+            value={userPhoneInput}
             onChange={(e) => {
-              setUserIdInput(e.target.value)
+              setUserPhoneInput(e.target.value)
+              setProfileLookupKey(null)
+              setReadOtpToken(null)
+              setReadOtpPhone(null)
               setOtpSessionId(null)
               setOtpHint(false)
+              setSearchError(null)
+              setResult(null)
             }}
             autoComplete="off"
           />
@@ -228,9 +264,17 @@ export function UserList() {
           </button>
         </div>
         <p className="user-list__search-hint">
-          Requires <code>Authorization: Bearer</code> and <code>X-OTP-Token</code> with <code>read_user</code> scope
-          after OTP verify.
+          The API does not load the profile until you have a <code>read_user</code> OTP. Press <strong>Search</strong> to
+          open the steps below, then <strong>Send code</strong> and <strong>Verify & load</strong> — only then is{' '}
+          <code>GET /users/{"{user_phone}"}</code> called (with <code>X-OTP-Token</code>). Repeat Search reuses your
+          verified token for the same number until it expires.
         </p>
+        {otpHint && !searchError && !result ? (
+          <p className="user-list__search-hint" role="status" style={{ marginTop: '0.35rem' }}>
+            No profile request sent yet. Use <strong>Send code</strong> (uses <code>target_user_phone</code>), enter the
+            code, then <strong>Verify & load</strong>.
+          </p>
+        ) : null}
         {searchError ? (
           <p className="merchant-list__banner merchant-list__banner--error" role="alert">
             {searchError}
@@ -288,13 +332,20 @@ export function UserList() {
             <button
               type="button"
               className="btn btn--secondary btn--sm"
-              onClick={() => navigate(ROUTES.USER_DETAIL.replace(':userId', d.id))}
+              onClick={() => {
+                const phone = profileLookupKey ?? userPhoneInput.trim()
+                if (phone) navigate(hrefUserProfileByPhone(phone))
+              }}
             >
               Open full profile
             </button>
           </header>
           <dl className="user-list__result-dl">
-            <dt>User id</dt>
+            <dt>Lookup (user_phone)</dt>
+            <dd>
+              <code>{profileLookupKey ?? userPhoneInput.trim()}</code>
+            </dd>
+            <dt>Portal record id</dt>
             <dd>
               <code>{d.id}</code>
             </dd>

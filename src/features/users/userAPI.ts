@@ -28,7 +28,7 @@ export interface UserTransactionRow {
   status: 'SUCCESS' | 'FAILED'
 }
 
-/** Shape from `GET /users/{user_id}` (see `USER_API_GUIDE.md`). */
+/** Shape from `GET /users/{user_phone}`. */
 export interface UserResponse {
   id: string
   user_name?: string | null
@@ -39,11 +39,17 @@ export interface UserResponse {
   updated_at?: string | null
 }
 
+/** Encode mobile number for `/users/{segment}` (preserves E.164 `+` via percent-encoding). */
+export function userPhonePathSegment(userPhone: string): string {
+  return encodeURIComponent(userPhone.trim())
+}
+
 export type OtpPurpose = 'read_user' | 'update_user' | 'delete_user'
 
 export interface SendOtpRequest {
   purpose: OtpPurpose
-  target_user_id: string
+  target_user_phone?: string
+  target_user_id?: string
 }
 
 export interface SendOtpResponse {
@@ -154,13 +160,14 @@ export async function fetchUsers(): Promise<PlatformUserRow[]> {
 }
 
 /**
- * `GET /users/{user_id}` — requires `Authorization` and `X-OTP-Token` with `read_user` scope per API guide.
+ * `GET /users/{user_phone}` — requires `Authorization` and `X-OTP-Token` with `read_user` scope.
  */
 export async function fetchUserProfile(
-  userId: string,
+  userPhone: string,
   otpToken?: string | null
 ): Promise<{ user: PlatformUserDetail; transactions: UserTransactionRow[] }> {
-  const response = await api.get<UserResponse>(`/users/${userId}`, {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.get<UserResponse>(`/users/${seg}`, {
     ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
   })
   const user = mapUserResponseToDetail(response.data)
@@ -168,28 +175,31 @@ export async function fetchUserProfile(
 }
 
 /** @deprecated Use `fetchUserProfile` */
-export async function getUserById(userId: string, otpToken: string): Promise<UserResponse> {
-  const response = await api.get<UserResponse>(`/users/${userId}`, {
+export async function getUserById(userPhone: string, otpToken: string): Promise<UserResponse> {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.get<UserResponse>(`/users/${seg}`, {
     headers: { 'X-OTP-Token': otpToken },
   })
   return response.data
 }
 
-/** `PUT /users/{user_id}` — OTP scope `update_user`. */
+/** `PUT /users/{user_phone}` — OTP scope `update_user`. */
 export async function updateUserById(
-  userId: string,
+  userPhone: string,
   payload: UpdateUserRequest,
   otpToken: string
 ): Promise<UserResponse> {
-  const response = await api.put<UserResponse>(`/users/${userId}`, payload, {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.put<UserResponse>(`/users/${seg}`, payload, {
     headers: { 'X-OTP-Token': otpToken },
   })
   return response.data
 }
 
-/** `DELETE /users/{user_id}` — OTP scope `delete_user`; API returns 204. */
-export async function deleteUserById(userId: string, otpToken: string): Promise<void> {
-  await api.delete(`/users/${userId}`, {
+/** `DELETE /users/{user_phone}` — OTP scope `delete_user`; API returns 204. */
+export async function deleteUserById(userPhone: string, otpToken: string): Promise<void> {
+  const seg = userPhonePathSegment(userPhone)
+  await api.delete(`/users/${seg}`, {
     headers: { 'X-OTP-Token': otpToken },
   })
 }
@@ -199,9 +209,9 @@ export async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse>
   return response.data
 }
 
-/** `POST /otp/send` with a user `purpose` and `target_user_id`. */
-export async function sendUserOtp(purpose: OtpPurpose, targetUserId: string): Promise<SendOtpResponse> {
-  return sendOtp({ purpose, target_user_id: targetUserId })
+/** `POST /otp/send` for user flows — requires `target_user_phone` for read/update/delete OTP. */
+export async function sendUserOtp(purpose: OtpPurpose, targetUserPhone: string): Promise<SendOtpResponse> {
+  return sendOtp({ purpose, target_user_phone: targetUserPhone.trim() })
 }
 
 export async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> {
