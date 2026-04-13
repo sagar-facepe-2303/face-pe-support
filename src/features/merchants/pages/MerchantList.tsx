@@ -196,8 +196,8 @@ export function MerchantList() {
       explicitOtpToken !== undefined && explicitOtpToken !== null
         ? explicitOtpToken
         : tokenMerchantId === id
-          ? otpReadToken
-          : null;
+        ? otpReadToken
+        : null;
     const hadToken = !!tokenToUse;
 
     setSearchError(null);
@@ -348,9 +348,7 @@ export function MerchantList() {
             merchant stays available here until you sign out (stored for this
             browser tab). <strong>Super admin</strong> and{" "}
             <strong>merchant admin</strong> can edit merchant fields and kiosks
-            inline below (<code>PUT /merchants/{"{id}"}</code>,{" "}
-            <code>PUT …/kiosks/{"{kiosk_id}"}</code>). Others can search and
-            view only.
+            inline below.
           </p>
         </div>
         <div className="merchant-list__actions">
@@ -546,7 +544,9 @@ export function MerchantList() {
             >
               <div className="merchant-list__detail-grid merchant-list__detail-grid--form">
                 <div className="merchant-list__form-row">
-                  <span className="merchant-list__field-label">Merchant id</span>
+                  <span className="merchant-list__field-label">
+                    Merchant id
+                  </span>
                   <code className="merchant-list__readonly-code">{d.id}</code>
                 </div>
                 <div className="merchant-list__form-row">
@@ -554,7 +554,9 @@ export function MerchantList() {
                   <span>{d.registrationNumber}</span>
                 </div>
                 <label className="merchant-list__form-row">
-                  <span className="merchant-list__field-label">Merchant name</span>
+                  <span className="merchant-list__field-label">
+                    Merchant name
+                  </span>
                   <input
                     className="merchant-list__input"
                     value={editMerchantName}
