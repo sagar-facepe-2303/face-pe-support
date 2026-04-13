@@ -3,9 +3,9 @@ import { MainLayout } from '../layout/MainLayout'
 import { ROUTES } from '../core/config/routes'
 import { ROLES } from '../core/constants/roles'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RoleHomeRedirect } from './RoleHomeRedirect'
 
 import { Login } from '../features/auth/pages/Login'
-import { Dashboard } from '../features/supportTeam/pages/Dashboard'
 import { Users as SupportTeamPage } from '../features/supportTeam/pages/Users'
 import { CreateSupportAdmin } from '../features/supportTeam/pages/CreateSupportAdmin'
 import { MerchantList } from '../features/merchants/pages/MerchantList'
@@ -26,7 +26,7 @@ export function AppRoutes() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
-            <Route path={ROUTES.HOME} element={<Dashboard />} />
+            <Route path={ROUTES.HOME} element={<RoleHomeRedirect />} />
             <Route path={ROUTES.PROFILE} element={<Profile />} />
             <Route
               element={

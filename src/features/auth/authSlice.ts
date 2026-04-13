@@ -47,6 +47,18 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null
     },
+    updateTokens(state, action: PayloadAction<{ token: string; refreshToken: string }>) {
+      state.token = action.payload.token
+      state.refreshToken = action.payload.refreshToken
+    },
+    clearSession(state) {
+      clearMerchantReadSession()
+      state.user = null
+      state.token = null
+      state.refreshToken = null
+      state.status = 'idle'
+      state.error = null
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -75,5 +87,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { hydrateSession, clearError } = authSlice.actions
+export const { hydrateSession, clearError, updateTokens, clearSession } = authSlice.actions
 export default authSlice.reducer

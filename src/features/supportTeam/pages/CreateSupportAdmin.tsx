@@ -1,76 +1,90 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAppSelector } from '../../../app/hooks'
-import { ROUTES } from '../../../core/config/routes'
-import { ROLES, getAssignableSupportRoles } from '../../../core/constants/roles'
-import type { Role } from '../../../core/constants/roles'
-import { createSupportUser } from '../supportAPI'
-import '../../../layout/Layout.css'
-import './CreateSupportAdmin.css'
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppSelector } from "../../../app/hooks";
+import { ROUTES } from "../../../core/config/routes";
+import {
+  ROLES,
+  getAssignableSupportRoles,
+} from "../../../core/constants/roles";
+import type { Role } from "../../../core/constants/roles";
+import { createSupportUser } from "../supportAPI";
+import "../../../layout/Layout.css";
+import "./CreateSupportAdmin.css";
 
 /** Matches common backend password rules; avoids opaque 422s for short passwords. */
-const MIN_PASSWORD_LENGTH = 8
+const MIN_PASSWORD_LENGTH = 8;
 
 const roleLabel: Record<string, string> = {
-  [ROLES.SUPER_ADMIN]: 'Super Admin',
-  [ROLES.MERCHANT_ADMIN]: 'Merchant Admin',
-  [ROLES.USER_ADMIN]: 'User Admin',
-  [ROLES.MERCHANT_SUPPORT]: 'Merchant Support',
-  [ROLES.USER_SUPPORT]: 'User Support',
-}
+  [ROLES.SUPER_ADMIN]: "Super Admin",
+  [ROLES.MERCHANT_ADMIN]: "Merchant Admin",
+  [ROLES.USER_ADMIN]: "User Admin",
+  [ROLES.MERCHANT_SUPPORT]: "Merchant Support",
+  [ROLES.USER_SUPPORT]: "User Support",
+};
 
 export function CreateSupportAdmin() {
-  const navigate = useNavigate()
-  const actorRole = useAppSelector((s) => s.auth.user?.role)
-  const assignableRoles = useMemo(() => getAssignableSupportRoles(actorRole), [actorRole])
+  const navigate = useNavigate();
+  const actorRole = useAppSelector((s) => s.auth.user?.role);
+  const assignableRoles = useMemo(
+    () => getAssignableSupportRoles(actorRole),
+    [actorRole],
+  );
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<Role>(assignableRoles[0] ?? ROLES.USER_ADMIN)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>(
+    assignableRoles[0] ?? ROLES.USER_ADMIN,
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (assignableRoles.length && !assignableRoles.includes(role)) {
-      setRole(assignableRoles[0])
+      setRole(assignableRoles[0]);
     }
-  }, [assignableRoles, role])
+  }, [assignableRoles, role]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    setSuccess(null)
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
 
-    const trimmedName = name.trim()
-    const trimmedEmail = email.trim()
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
     if (!trimmedName || !trimmedEmail || !password || !role) {
-      setError('All fields are required.')
-      return
+      setError("All fields are required.");
+      return;
     }
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
-      return
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       const created = await createSupportUser(actorRole, {
         name: trimmedName,
         email: trimmedEmail,
         password,
         role,
-      })
-      setSuccess(`Created ${created.name} as ${roleLabel[created.role] ?? created.role}.`)
-      setName('')
-      setEmail('')
-      setPassword('')
+      });
+      setSuccess(
+        `Created ${created.name} as ${
+          roleLabel[created.role] ?? created.role
+        }.`,
+      );
+      setName("");
+      setEmail("");
+      setPassword("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create support admin.')
+      setError(
+        e instanceof Error ? e.message : "Failed to create support admin.",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -79,9 +93,10 @@ export function CreateSupportAdmin() {
       <header className="page-header">
         <div>
           <p className="page-kicker">Support Team</p>
-          <h1 className="page-title">Create Admin</h1>
+          <h1 className="page-title">Create Users</h1>
           <p className="page-desc">
-            Super admins can assign any support portal role. Other roles use the same rules as on the team list.
+            Super admins can assign any support portal role. Other roles use the
+            same rules as on the team list.
           </p>
         </div>
         <Link to={ROUTES.SUPPORT_TEAM} className="btn btn--secondary btn--sm">
@@ -89,11 +104,18 @@ export function CreateSupportAdmin() {
         </Link>
       </header>
 
-      <section className="create-support-admin__card card-surface" aria-labelledby="create-admin-form">
+      <section
+        className="create-support-admin__card card-surface"
+        aria-labelledby="create-admin-form"
+      >
         <h2 id="create-admin-form" className="create-support-admin__title">
           New support operator
         </h2>
-        <form className="create-support-admin__form" onSubmit={onSubmit} noValidate>
+        <form
+          className="create-support-admin__form"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <label className="create-support-admin__field">
             <span>Name</span>
             <input
@@ -131,14 +153,22 @@ export function CreateSupportAdmin() {
               required
               aria-describedby="create-admin-password-hint"
             />
-            <span id="create-admin-password-hint" className="create-support-admin__hint">
-              Use at least {MIN_PASSWORD_LENGTH} characters (required by the server).
+            <span
+              id="create-admin-password-hint"
+              className="create-support-admin__hint"
+            >
+              Use at least {MIN_PASSWORD_LENGTH} characters (required by the
+              server).
             </span>
           </label>
 
           <label className="create-support-admin__field">
             <span>Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)} required>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              required
+            >
               {assignableRoles.map((r) => (
                 <option key={r} value={r}>
                   {roleLabel[r] ?? r}
@@ -159,8 +189,12 @@ export function CreateSupportAdmin() {
           ) : null}
 
           <div className="create-support-admin__actions">
-            <button type="submit" className="btn btn--primary" disabled={loading || !assignableRoles.length}>
-              {loading ? 'Creating...' : 'Create Admin'}
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={loading || !assignableRoles.length}
+            >
+              {loading ? "Creating..." : "Create Users"}
             </button>
             <button
               type="button"
@@ -173,6 +207,5 @@ export function CreateSupportAdmin() {
         </form>
       </section>
     </div>
-  )
+  );
 }
-

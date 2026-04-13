@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
@@ -68,9 +74,8 @@ function SupportUsersSection({
 }: SupportUsersSectionProps) {
   const dispatch = useAppDispatch();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(
-    20,
-  );
+  const [pageSize, setPageSize] =
+    useState<(typeof PAGE_SIZE_OPTIONS)[number]>(20);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
 
@@ -186,8 +191,8 @@ function SupportUsersSection({
         </label>
       </div>
       <p className="support-team-api__hint support-team-api__hint--inset">
-        Search applies to the current page of results. Status uses the list API (
-        <code>is_active</code>).
+        Search applies to the current page of results. Status uses the list API
+        (<code>is_active</code>).
       </p>
 
       {bucket.loading ? (
@@ -208,9 +213,7 @@ function SupportUsersSection({
                 <tr>
                   <th scope="col">Name</th>
                   <th scope="col">Email</th>
-                  {showRoleColumn ? (
-                    <th scope="col">Role</th>
-                  ) : null}
+                  {showRoleColumn ? <th scope="col">Role</th> : null}
                   <th scope="col">Status</th>
                   <th scope="col">Created</th>
                   <th scope="col">
@@ -222,10 +225,14 @@ function SupportUsersSection({
                 {filteredItems.map((u) => (
                   <tr key={u.id}>
                     <td data-label="Name">
-                      <span className="support-team-api__td-value">{u.name}</span>
+                      <span className="support-team-api__td-value">
+                        {u.name}
+                      </span>
                     </td>
                     <td data-label="Email">
-                      <span className="support-team-api__td-value">{u.email}</span>
+                      <span className="support-team-api__td-value">
+                        {u.email}
+                      </span>
                     </td>
                     {showRoleColumn ? (
                       <td data-label="Role">
@@ -291,9 +298,7 @@ function SupportUsersSection({
                 type="button"
                 className="btn btn--secondary btn--sm"
                 disabled={page >= totalPages || bucket.loading}
-                onClick={() =>
-                  setPage((p) => Math.min(totalPages, p + 1))
-                }
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
                 Next
               </button>
@@ -494,8 +499,8 @@ export function Users() {
       case ROLES.MERCHANT_ADMIN:
         return (
           <>
-            You can add merchant support staff and edit their details. This
-            list shows merchant support accounts only.
+            You can add merchant support staff and edit their details. This list
+            shows merchant support accounts only.
           </>
         );
       case ROLES.USER_ADMIN:
@@ -600,7 +605,7 @@ export function Users() {
               to={ROUTES.SUPPORT_TEAM_CREATE_ADMIN}
               className="btn btn--primary btn--sm"
             >
-              Create admin (full page)
+              Create Users (full page)
             </Link>
           ) : null}
         </div>
@@ -722,10 +727,7 @@ export function Users() {
         </p>
       )}
 
-      <div
-        className="support-team-page__widgets"
-        style={{ marginTop: "1rem" }}
-      >
+      <div className="support-team-page__widgets" style={{ marginTop: "1rem" }}>
         {showMerchantList ? (
           <SupportUsersSection
             title="Merchant support"

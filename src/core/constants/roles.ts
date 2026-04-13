@@ -98,3 +98,14 @@ export function getAssignableSupportRoles(
   }
   return [];
 }
+
+export function getDefaultRouteForRole(role: string | undefined): string {
+  if (!role) return '/login';
+  if (hasRole(role, [ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.USER_SUPPORT])) {
+    return '/users';
+  }
+  if (hasRole(role, [ROLES.MERCHANT_ADMIN, ROLES.MERCHANT_SUPPORT])) {
+    return '/merchants';
+  }
+  return '/profile';
+}

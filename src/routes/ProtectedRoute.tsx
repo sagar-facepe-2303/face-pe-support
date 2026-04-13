@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 import { ROUTES } from '../core/config/routes'
 import type { Role } from '../core/constants/roles'
-import { hasRole } from '../core/constants/roles'
+import { getDefaultRouteForRole, hasRole } from '../core/constants/roles'
 
 interface ProtectedRouteProps {
   allowedRoles?: readonly Role[]
@@ -18,7 +18,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles?.length && !hasRole(role, allowedRoles)) {
-    return <Navigate to={ROUTES.HOME} replace />
+    return <Navigate to={getDefaultRouteForRole(role)} replace />
   }
 
   return <Outlet />

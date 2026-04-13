@@ -12,7 +12,6 @@ import {
 import {
   IconAudit,
   IconCreateAdmin,
-  IconDashboard,
   IconHeadset,
   IconKiosk,
   IconLogout,
@@ -59,9 +58,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           />
         </span>
         <div className="sidebar__brand-text">
-          <div className="sidebar__logo-title">
-            FacePe
-          </div>
+          <div className="sidebar__logo-title">FacePe</div>
           <div className="sidebar__logo-sub">Admin Workspace</div>
         </div>
         <button
@@ -75,15 +72,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       <nav className="sidebar__nav" aria-label="Main">
-        <NavLink to={ROUTES.HOME} className={navClass} end onClick={onClose}>
-          <SidebarNavIcon>
-            <IconDashboard />
-          </SidebarNavIcon>
-          <span className="sidebar__text">Dashboard</span>
-        </NavLink>
         {canAccessMerchantScope(role) ? (
           <>
-            <NavLink to={ROUTES.MERCHANTS} className={navClass} onClick={onClose}>
+            <NavLink
+              to={ROUTES.MERCHANTS}
+              className={navClass}
+              onClick={onClose}
+            >
               <SidebarNavIcon>
                 <IconMerchants />
               </SidebarNavIcon>
@@ -105,7 +100,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span className="sidebar__text">Users</span>
           </NavLink>
         ) : null}
-        {hasRole(role, [ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]) ? (
+        {hasRole(role, [
+          ROLES.SUPER_ADMIN,
+          ROLES.USER_ADMIN,
+          ROLES.MERCHANT_ADMIN,
+        ]) ? (
           <NavLink
             to={ROUTES.SUPPORT_TEAM}
             className={navClass}
@@ -127,7 +126,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <SidebarNavIcon>
               <IconCreateAdmin />
             </SidebarNavIcon>
-            <span className="sidebar__text">Create Admin</span>
+            <span className="sidebar__text">Create Users</span>
           </NavLink>
         ) : null}
         {canViewAuditLogs(role) ? (
