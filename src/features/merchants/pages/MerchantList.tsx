@@ -2,7 +2,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import { createMerchant } from "../merchantSlice";
+import {
+  createMerchant,
+  updateMerchantKiosk,
+  updateMerchantRecord,
+} from "../merchantSlice";
 import * as merchantAPI from "../merchantAPI";
 import type { MerchantDetail, MerchantKioskRow } from "../merchantAPI";
 import {
@@ -53,6 +57,34 @@ export function MerchantList() {
     string | null
   >(null);
 
+  const [editMerchantName, setEditMerchantName] = useState("");
+  const [editMerchantEmail, setEditMerchantEmail] = useState("");
+  const [editMerchantPhone, setEditMerchantPhone] = useState("");
+  const [editMerchantStatus, setEditMerchantStatus] = useState("pending");
+  const [merchantSaving, setMerchantSaving] = useState(false);
+  const [merchantInlineError, setMerchantInlineError] = useState<string | null>(
+    null,
+  );
+  const [merchantInlineOk, setMerchantInlineOk] = useState<string | null>(null);
+
+  const [kioskEdit, setKioskEdit] = useState<MerchantKioskRow | null>(null);
+  const [kioskOnline, setKioskOnline] = useState(true);
+  const [kioskFace, setKioskFace] = useState("");
+  const [kioskCam, setKioskCam] = useState("");
+  const [kioskActive, setKioskActive] = useState(true);
+  const [kioskSaving, setKioskSaving] = useState(false);
+  const [kioskInlineError, setKioskInlineError] = useState<string | null>(null);
+
+  const d = result?.detail;
+
+  function detailStatusToApi(
+    s: MerchantDetail["status"],
+  ): "pending" | "active" | "suspended" {
+    if (s === "SUSPENDED") return "suspended";
+    if (s === "PENDING") return "pending";
+    return "active";
+  }
+
   useEffect(() => {
     if (!user?.id) return;
     const saved = loadMerchantReadSession(user.id);
@@ -66,6 +98,93 @@ export function MerchantList() {
     setOtpCode("");
     setSearchError(null);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!d) return;
+    setEditMerchantName(d.name);
+    setEditMerchantEmail(d.email);
+    setEditMerchantPhone(d.phone !== "—" ? d.phone : "");
+    setEditMerchantStatus(detailStatusToApi(d.status));
+    setMerchantInlineError(null);
+    setMerchantInlineOk(null);
+  }, [d]);
+
+  async function handleSaveMerchantInline(e: FormEvent) {
+    e.preventDefault();
+    if (!d || !canMutate) return;
+    const name = editMerchantName.trim();
+    const email = editMerchantEmail.trim();
+    if (!name || !email) {
+      setMerchantInlineError("Name and email are required.");
+      return;
+    }
+    setMerchantSaving(true);
+    setMerchantInlineError(null);
+    setMerchantInlineOk(null);
+    try {
+      await dispatch(
+        updateMerchantRecord({
+          merchantId: d.id,
+          payload: {
+            merchant_name: name,
+            merchant_email: email,
+            ...(editMerchantPhone.trim()
+              ? { merchant_phone: editMerchantPhone.trim() }
+              : {}),
+            status: editMerchantStatus,
+            is_active: editMerchantStatus !== "suspended",
+          },
+        }),
+      ).unwrap();
+      setMerchantInlineOk("Merchant updated.");
+      await loadMerchant();
+    } catch (err) {
+      setMerchantInlineError(
+        typeof err === "string" ? err : "Could not update merchant.",
+      );
+    } finally {
+      setMerchantSaving(false);
+    }
+  }
+
+  function openKioskEdit(k: MerchantKioskRow) {
+    if (!canMutate) return;
+    setKioskEdit(k);
+    setKioskOnline(k.isOnline);
+    setKioskFace(String(k.faceStatus));
+    setKioskCam(String(k.cameraStatus));
+    setKioskActive(k.isActive);
+    setKioskInlineError(null);
+  }
+
+  async function handleSaveKioskModal(e: FormEvent) {
+    e.preventDefault();
+    if (!d || !kioskEdit || !canMutate) return;
+    setKioskSaving(true);
+    setKioskInlineError(null);
+    try {
+      await dispatch(
+        updateMerchantKiosk({
+          merchantId: d.id,
+          kioskId: kioskEdit.id,
+          payload: {
+            is_online: kioskOnline,
+            face_status: kioskFace.trim(),
+            camera_status: kioskCam.trim(),
+            is_active: kioskActive,
+          },
+        }),
+      ).unwrap();
+      setKioskEdit(null);
+      await loadMerchant();
+    } catch (err) {
+      setKioskInlineError(
+        typeof err === "string" ? err : "Could not update kiosk.",
+      );
+    } finally {
+      setKioskSaving(false);
+    }
+  }
 
   async function loadMerchant(explicitOtpToken?: string | null) {
     const id = merchantIdInput.trim();
@@ -217,8 +336,6 @@ export function MerchantList() {
     }
   }
 
-  const d = result?.detail;
-
   return (
     <div className="merchant-list page-shell">
       <header className="page-header">
@@ -229,11 +346,11 @@ export function MerchantList() {
             Look up a merchant by Support Portal id. If the API requires it,
             verify with a one-time code. After a successful verification, that
             merchant stays available here until you sign out (stored for this
-            browser tab). Open <strong>Open full page</strong> to edit merchant
-            details or manage kiosks (admin API:{" "}
-            <code>PUT /merchants/{"{id}"}</code>,{" "}
-            <code>POST /merchants/{"{id}"}/kiosks</code>,{" "}
-            <code>PUT …/kiosks/{"{kiosk_id}"}</code>).
+            browser tab). <strong>Super admin</strong> and{" "}
+            <strong>merchant admin</strong> can edit merchant fields and kiosks
+            inline below (<code>PUT /merchants/{"{id}"}</code>,{" "}
+            <code>PUT …/kiosks/{"{kiosk_id}"}</code>). Others can search and
+            view only.
           </p>
         </div>
         <div className="merchant-list__actions">
@@ -407,46 +524,145 @@ export function MerchantList() {
             >
               {d.name}
             </h2>
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => openDetailPage(d.id)}
-            >
-              Open full page
-            </button>
-          </header>
-          <dl className="merchant-list__detail-grid">
-            <dt>Merchant id</dt>
-            <dd>
-              <code>{d.id}</code>
-            </dd>
-            <dt>Reference</dt>
-            <dd>{d.registrationNumber}</dd>
-            <dt>Email</dt>
-            <dd>{d.email}</dd>
-            <dt>Phone</dt>
-            <dd>{d.phone}</dd>
-            <dt>Status</dt>
-            <dd>
-              <span
-                className={`merchant-list__pill merchant-list__pill--${d.status.toLowerCase()}`}
+            <div className="merchant-list__detail-actions">
+              {canMutate ? (
+                <span className="merchant-list__badge-admin">Admin edit</span>
+              ) : (
+                <span className="merchant-list__badge-view">View only</span>
+              )}
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => openDetailPage(d.id)}
               >
-                {d.status}
-              </span>
-            </dd>
-            <dt>Registered</dt>
-            <dd>
-              <time dateTime={d.registeredAt}>
-                {formatDisplayDate(d.registeredAt)}
-              </time>
-            </dd>
-          </dl>
+                Open full page
+              </button>
+            </div>
+          </header>
+          {canMutate ? (
+            <form
+              className="merchant-list__inline-form"
+              onSubmit={handleSaveMerchantInline}
+            >
+              <div className="merchant-list__detail-grid merchant-list__detail-grid--form">
+                <div className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Merchant id</span>
+                  <code className="merchant-list__readonly-code">{d.id}</code>
+                </div>
+                <div className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Reference</span>
+                  <span>{d.registrationNumber}</span>
+                </div>
+                <label className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Merchant name</span>
+                  <input
+                    className="merchant-list__input"
+                    value={editMerchantName}
+                    onChange={(e) => setEditMerchantName(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Email</span>
+                  <input
+                    className="merchant-list__input"
+                    type="email"
+                    value={editMerchantEmail}
+                    onChange={(e) => setEditMerchantEmail(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Phone</span>
+                  <input
+                    className="merchant-list__input"
+                    type="tel"
+                    value={editMerchantPhone}
+                    onChange={(e) => setEditMerchantPhone(e.target.value)}
+                  />
+                </label>
+                <label className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Status</span>
+                  <select
+                    className="merchant-list__input"
+                    value={editMerchantStatus}
+                    onChange={(e) => setEditMerchantStatus(e.target.value)}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </label>
+                <div className="merchant-list__form-row">
+                  <span className="merchant-list__field-label">Registered</span>
+                  <time dateTime={d.registeredAt}>
+                    {formatDisplayDate(d.registeredAt)}
+                  </time>
+                </div>
+              </div>
+              {merchantInlineError ? (
+                <p
+                  className="merchant-list__banner merchant-list__banner--error"
+                  role="alert"
+                >
+                  {merchantInlineError}
+                </p>
+              ) : null}
+              {merchantInlineOk ? (
+                <p className="merchant-list__inline-ok" role="status">
+                  {merchantInlineOk}
+                </p>
+              ) : null}
+              <div className="merchant-list__inline-actions">
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--sm"
+                  disabled={merchantSaving}
+                >
+                  {merchantSaving ? "Saving…" : "Save merchant"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <dl className="merchant-list__detail-grid">
+              <dt>Merchant id</dt>
+              <dd>
+                <code>{d.id}</code>
+              </dd>
+              <dt>Reference</dt>
+              <dd>{d.registrationNumber}</dd>
+              <dt>Email</dt>
+              <dd>{d.email}</dd>
+              <dt>Phone</dt>
+              <dd>{d.phone}</dd>
+              <dt>Status</dt>
+              <dd>
+                <span
+                  className={`merchant-list__pill merchant-list__pill--${d.status.toLowerCase()}`}
+                >
+                  {d.status}
+                </span>
+              </dd>
+              <dt>Registered</dt>
+              <dd>
+                <time dateTime={d.registeredAt}>
+                  {formatDisplayDate(d.registeredAt)}
+                </time>
+              </dd>
+            </dl>
+          )}
 
           {result && result.kiosks.length > 0 ? (
             <div className="merchant-list__kiosks-wrap">
               <h3 className="merchant-list__kiosks-title">
                 Kiosks ({result.kiosks.length})
               </h3>
+              {canMutate ? (
+                <p className="merchant-list__kiosks-hint">
+                  Click a row or use <strong>Edit</strong> to update online,
+                  face, and camera.
+                </p>
+              ) : null}
               <div className="merchant-list__scroll">
                 <table className="merchant-list__table">
                   <thead>
@@ -456,11 +672,22 @@ export function MerchantList() {
                       <th scope="col">Face</th>
                       <th scope="col">Camera</th>
                       <th scope="col">Last sync</th>
+                      <th scope="col">
+                        <span className="visually-hidden">Actions</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {result.kiosks.map((k) => (
-                      <tr key={k.id}>
+                      <tr
+                        key={k.id}
+                        className={
+                          canMutate ? "merchant-list__kiosk-row--clickable" : ""
+                        }
+                        onClick={() => {
+                          if (canMutate) openKioskEdit(k);
+                        }}
+                      >
                         <td>
                           <code>{k.serialId}</code>
                         </td>
@@ -468,6 +695,22 @@ export function MerchantList() {
                         <td>{k.faceStatus}</td>
                         <td>{k.cameraStatus}</td>
                         <td>{k.lastSync}</td>
+                        <td>
+                          {canMutate ? (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openKioskEdit(k);
+                              }}
+                            >
+                              Edit
+                            </button>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -476,6 +719,96 @@ export function MerchantList() {
             </div>
           ) : null}
         </section>
+      ) : null}
+
+      {kioskEdit && canMutate ? (
+        <div className="merchant-list__modal-root" role="presentation">
+          <button
+            type="button"
+            className="merchant-list__modal-backdrop"
+            aria-label="Close dialog"
+            onClick={() => !kioskSaving && setKioskEdit(null)}
+          />
+          <div
+            className="merchant-list__modal card-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="merchant-list-kiosk-edit-title"
+          >
+            <h2
+              id="merchant-list-kiosk-edit-title"
+              className="merchant-list__modal-title"
+            >
+              Edit kiosk {kioskEdit.serialId}
+            </h2>
+            <form
+              className="merchant-list__modal-form"
+              onSubmit={handleSaveKioskModal}
+            >
+              <label className="merchant-list__field merchant-list__field--check">
+                <input
+                  type="checkbox"
+                  checked={kioskOnline}
+                  onChange={(e) => setKioskOnline(e.target.checked)}
+                />
+                <span>Online</span>
+              </label>
+              <label className="merchant-list__field">
+                <span className="merchant-list__field-label">Face status</span>
+                <input
+                  className="merchant-list__input"
+                  value={kioskFace}
+                  onChange={(e) => setKioskFace(e.target.value)}
+                  placeholder="e.g. ok"
+                />
+              </label>
+              <label className="merchant-list__field">
+                <span className="merchant-list__field-label">
+                  Camera status
+                </span>
+                <input
+                  className="merchant-list__input"
+                  value={kioskCam}
+                  onChange={(e) => setKioskCam(e.target.value)}
+                  placeholder="e.g. ok"
+                />
+              </label>
+              <label className="merchant-list__field merchant-list__field--check">
+                <input
+                  type="checkbox"
+                  checked={kioskActive}
+                  onChange={(e) => setKioskActive(e.target.checked)}
+                />
+                <span>Device active</span>
+              </label>
+              {kioskInlineError ? (
+                <p
+                  className="merchant-list__banner merchant-list__banner--error"
+                  role="alert"
+                >
+                  {kioskInlineError}
+                </p>
+              ) : null}
+              <div className="merchant-list__modal-actions">
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  disabled={kioskSaving}
+                  onClick={() => setKioskEdit(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn--primary btn--sm"
+                  disabled={kioskSaving}
+                >
+                  {kioskSaving ? "Saving…" : "Save kiosk"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       ) : null}
 
       {createOpen ? (
