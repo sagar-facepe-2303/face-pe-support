@@ -57,6 +57,8 @@ export function MerchantDetails() {
   const [kCam, setKCam] = useState('ok')
 
   const [editKiosk, setEditKiosk] = useState<MerchantKioskRow | null>(null)
+  const [ekFaceOk, setEkFaceOk] = useState(true)
+  const [ekCamOk, setEkCamOk] = useState(true)
   const [ekSubmitting, setEkSubmitting] = useState(false)
   const [ekError, setEkError] = useState<string | null>(null)
 
@@ -271,8 +273,8 @@ export function MerchantDetails() {
           kioskId: editKiosk.id,
           payload: {
             is_online: editKiosk.isOnline,
-            face_status: editKiosk.faceStatus,
-            camera_status: editKiosk.cameraStatus,
+            face_status: ekFaceOk,
+            camera_status: ekCamOk,
             is_active: editKiosk.isActive,
           },
         })
@@ -311,6 +313,8 @@ export function MerchantDetails() {
 
   function openKioskEdit(k: MerchantKioskRow) {
     setEditKiosk({ ...k })
+    setEkFaceOk(merchantAPI.parseKioskDisplayToBool(k.faceStatus))
+    setEkCamOk(merchantAPI.parseKioskDisplayToBool(k.cameraStatus))
     setEkError(null)
   }
 
@@ -598,19 +602,21 @@ export function MerchantDetails() {
                 />
                 Online
               </label>
-              <label className="merchant-details__label">
-                Face status
+              <label className="merchant-details__check">
                 <input
-                  value={editKiosk.faceStatus}
-                  onChange={(e) => setEditKiosk({ ...editKiosk, faceStatus: e.target.value })}
+                  type="checkbox"
+                  checked={ekFaceOk}
+                  onChange={(e) => setEkFaceOk(e.target.checked)}
                 />
+                Face OK
               </label>
-              <label className="merchant-details__label">
-                Camera status
+              <label className="merchant-details__check">
                 <input
-                  value={editKiosk.cameraStatus}
-                  onChange={(e) => setEditKiosk({ ...editKiosk, cameraStatus: e.target.value })}
+                  type="checkbox"
+                  checked={ekCamOk}
+                  onChange={(e) => setEkCamOk(e.target.checked)}
                 />
+                Camera OK
               </label>
               <label className="merchant-details__check">
                 <input

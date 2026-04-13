@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import { parseKioskDisplayToBool } from '../../merchants/merchantAPI'
 import { updateMerchantKiosk } from '../../merchants/merchantSlice'
 import { clearKioskDetail, loadKioskDetail } from '../kioskSlice'
 import { ROUTES } from '../../../core/config/routes'
@@ -24,8 +25,8 @@ export function KioskDetails() {
   const [ekSubmitting, setEkSubmitting] = useState(false)
   const [ekError, setEkError] = useState<string | null>(null)
   const [kOnline, setKOnline] = useState(true)
-  const [kFace, setKFace] = useState('')
-  const [kCam, setKCam] = useState('')
+  const [kFaceOk, setKFaceOk] = useState(true)
+  const [kCamOk, setKCamOk] = useState(true)
   const [kActive, setKActive] = useState(true)
 
   useEffect(() => {
@@ -48,8 +49,8 @@ export function KioskDetails() {
   useEffect(() => {
     if (k && editOpen) {
       setKOnline(k.isOnline)
-      setKFace(k.faceStatus)
-      setKCam(k.cameraStatus)
+      setKFaceOk(parseKioskDisplayToBool(k.faceStatus))
+      setKCamOk(parseKioskDisplayToBool(k.cameraStatusLabel || k.cameraStatus))
       setKActive(true)
     }
   }, [k, editOpen])
@@ -93,8 +94,8 @@ export function KioskDetails() {
           kioskId,
           payload: {
             is_online: kOnline,
-            face_status: kFace,
-            camera_status: kCam,
+            face_status: kFaceOk,
+            camera_status: kCamOk,
             is_active: kActive,
           },
         })
@@ -216,13 +217,21 @@ export function KioskDetails() {
                 <input type="checkbox" checked={kOnline} onChange={(e) => setKOnline(e.target.checked)} />
                 Online
               </label>
-              <label className="kiosk-details__label">
-                Face status
-                <input value={kFace} onChange={(e) => setKFace(e.target.value)} />
+              <label className="kiosk-details__check">
+                <input
+                  type="checkbox"
+                  checked={kFaceOk}
+                  onChange={(e) => setKFaceOk(e.target.checked)}
+                />
+                Face OK
               </label>
-              <label className="kiosk-details__label">
-                Camera status
-                <input value={kCam} onChange={(e) => setKCam(e.target.value)} />
+              <label className="kiosk-details__check">
+                <input
+                  type="checkbox"
+                  checked={kCamOk}
+                  onChange={(e) => setKCamOk(e.target.checked)}
+                />
+                Camera OK
               </label>
               <label className="kiosk-details__check">
                 <input type="checkbox" checked={kActive} onChange={(e) => setKActive(e.target.checked)} />

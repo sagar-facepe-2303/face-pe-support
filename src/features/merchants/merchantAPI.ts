@@ -116,10 +116,20 @@ function normalizeKioskFlag(input: string): boolean {
   return s === 'ok' || s === 'true' || s === '1' || s === 'yes' || s === 'good'
 }
 
+/** Map table/API display values to booleans for PUT payloads (backend expects booleans). */
+export function parseKioskDisplayToBool(
+  value: string | boolean | undefined | null,
+): boolean {
+  if (typeof value === 'boolean') return value
+  const s = String(value ?? '').trim()
+  if (!s) return true
+  return normalizeKioskFlag(s)
+}
+
 export interface UpdateKioskRequest {
   is_online?: boolean
-  face_status?: string
-  camera_status?: string
+  face_status?: boolean
+  camera_status?: boolean
   is_active?: boolean
 }
 

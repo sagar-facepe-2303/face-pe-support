@@ -69,8 +69,8 @@ export function MerchantList() {
 
   const [kioskEdit, setKioskEdit] = useState<MerchantKioskRow | null>(null);
   const [kioskOnline, setKioskOnline] = useState(true);
-  const [kioskFace, setKioskFace] = useState("");
-  const [kioskCam, setKioskCam] = useState("");
+  const [kioskFaceOk, setKioskFaceOk] = useState(true);
+  const [kioskCamOk, setKioskCamOk] = useState(true);
   const [kioskActive, setKioskActive] = useState(true);
   const [kioskSaving, setKioskSaving] = useState(false);
   const [kioskInlineError, setKioskInlineError] = useState<string | null>(null);
@@ -151,8 +151,8 @@ export function MerchantList() {
     if (!canMutate) return;
     setKioskEdit(k);
     setKioskOnline(k.isOnline);
-    setKioskFace(String(k.faceStatus));
-    setKioskCam(String(k.cameraStatus));
+    setKioskFaceOk(merchantAPI.parseKioskDisplayToBool(k.faceStatus));
+    setKioskCamOk(merchantAPI.parseKioskDisplayToBool(k.cameraStatus));
     setKioskActive(k.isActive);
     setKioskInlineError(null);
   }
@@ -169,8 +169,8 @@ export function MerchantList() {
           kioskId: kioskEdit.id,
           payload: {
             is_online: kioskOnline,
-            face_status: kioskFace.trim(),
-            camera_status: kioskCam.trim(),
+            face_status: kioskFaceOk,
+            camera_status: kioskCamOk,
             is_active: kioskActive,
           },
         }),
@@ -753,25 +753,21 @@ export function MerchantList() {
                 />
                 <span>Online</span>
               </label>
-              <label className="merchant-list__field">
-                <span className="merchant-list__field-label">Face status</span>
+              <label className="merchant-list__field merchant-list__field--check">
                 <input
-                  className="merchant-list__input"
-                  value={kioskFace}
-                  onChange={(e) => setKioskFace(e.target.value)}
-                  placeholder="e.g. ok"
+                  type="checkbox"
+                  checked={kioskFaceOk}
+                  onChange={(e) => setKioskFaceOk(e.target.checked)}
                 />
+                <span>Face OK</span>
               </label>
-              <label className="merchant-list__field">
-                <span className="merchant-list__field-label">
-                  Camera status
-                </span>
+              <label className="merchant-list__field merchant-list__field--check">
                 <input
-                  className="merchant-list__input"
-                  value={kioskCam}
-                  onChange={(e) => setKioskCam(e.target.value)}
-                  placeholder="e.g. ok"
+                  type="checkbox"
+                  checked={kioskCamOk}
+                  onChange={(e) => setKioskCamOk(e.target.checked)}
                 />
+                <span>Camera OK</span>
               </label>
               <label className="merchant-list__field merchant-list__field--check">
                 <input
