@@ -516,6 +516,8 @@ export function Users() {
   const [inviteRole, setInviteRole] = useState<Role>(
     assignableRoles[0] ?? ROLES.USER_SUPPORT,
   );
+  /** New accounts default to active; turn off to create an inactive user. */
+  const [inviteActive, setInviteActive] = useState(true);
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
@@ -545,6 +547,7 @@ export function Users() {
       return;
     }
     setInviteSubmitting(true);
+    const startActive = inviteActive;
     try {
       await dispatch(
         inviteSupportUser({
@@ -552,10 +555,13 @@ export function Users() {
           email,
           password: invitePassword,
           role: inviteRole,
+          is_active: startActive,
         }),
       ).unwrap();
       setInviteSuccess(
-        `${email} was added as ${roleLabel[inviteRole] ?? inviteRole}.`,
+        `${email} was added as ${roleLabel[inviteRole] ?? inviteRole}${
+          startActive ? "" : " (inactive)"
+        }.`,
       );
       if (inviteRole === ROLES.MERCHANT_SUPPORT) {
         setMerchantInviteEpoch((n) => n + 1);
@@ -565,6 +571,7 @@ export function Users() {
       setInviteName("");
       setInviteEmail("");
       setInvitePassword("");
+      setInviteActive(true);
     } catch (err) {
       setInviteError(
         typeof err === "string" ? err : "Could not create support user.",
@@ -663,6 +670,33 @@ export function Users() {
                 ))}
               </select>
             </label>
+            <div className="support-team-api__toggle">
+              <span
+                id="invite-active-label"
+                className="support-team-api__toggle-text"
+              >
+                Account status
+              </span>
+              <button
+                type="button"
+                className={`support-team-api__switch${
+                  inviteActive ? " support-team-api__switch--on" : ""
+                }`}
+                role="switch"
+                aria-checked={inviteActive}
+                aria-labelledby="invite-active-label"
+                onClick={() => setInviteActive((v) => !v)}
+              >
+                <span className="visually-hidden">
+                  {inviteActive ? "Active" : "Inactive"}
+                </span>
+              </button>
+            </div>
+            <p className="support-team-api__hint">
+              {inviteActive
+                ? "New user can sign in."
+                : "Creates the account as inactive; you can activate later from the list."}
+            </p>
             {inviteError ? (
               <p className="support-team-api__err" role="alert">
                 {inviteError}

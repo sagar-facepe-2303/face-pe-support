@@ -21,6 +21,8 @@ export interface CreateSupportUserPayload {
   email: string
   password: string
   role: Role
+  /** When false, the account is created then set inactive if the API requires a follow-up PATCH. */
+  is_active?: boolean
 }
 
 export interface UpdateSupportUserPayload {
@@ -147,8 +149,20 @@ export async function createSupportUser(
     throw new Error('You are not allowed to create this support role.')
   }
   try {
-    const response = await api.post<unknown>('/support-users', payload)
-    return normalizeSupportUser(response.data)
+    const { is_active: desiredActive, ...createBody } = payload
+    const response = await api.post<unknown>('/support-users', {
+      ...createBody,
+      ...(desiredActive !== undefined ? { is_active: desiredActive } : {}),
+    })
+    let user = normalizeSupportUser(response.data)
+    if (
+      desiredActive !== undefined &&
+      user.is_active !== desiredActive &&
+      user.id
+    ) {
+      user = await updateSupportUser(user.id, { is_active: desiredActive })
+    }
+    return user
   } catch (e) {
     throw new Error(getApiErrorMessage(e))
   }

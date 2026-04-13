@@ -60,8 +60,8 @@ export function canMutateUsers(role: string | undefined): boolean {
 /** Roles a super_admin may assign when creating support users (API: any portal role). */
 export const CREATABLE_SUPPORT_ROLES_SUPER_ADMIN: Role[] = [
   // ROLES.SUPER_ADMIN,
-  // ROLES.USER_ADMIN,
-  // ROLES.MERCHANT_ADMIN,
+  ROLES.USER_ADMIN,
+  ROLES.MERCHANT_ADMIN,
   ROLES.USER_SUPPORT,
   ROLES.MERCHANT_SUPPORT,
 ];
