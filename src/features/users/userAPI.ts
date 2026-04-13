@@ -73,6 +73,29 @@ export interface UpdateUserRequest {
   user_phone?: string
 }
 
+/** `POST /test/seed-user` — create an end-customer record (dev/test helper; Bearer auth). */
+export interface SeedCustomerUserRequest {
+  user_id: string
+  user_name: string
+  user_email: string
+  user_phone: string
+}
+
+export interface SeedCustomerUserResponse {
+  id: string
+  user_id: string
+  user_name: string
+  user_email: string
+  user_phone: string
+  created_at: string
+  updated_at: string
+}
+
+export async function seedCustomerUser(payload: SeedCustomerUserRequest): Promise<SeedCustomerUserResponse> {
+  const response = await api.post<SeedCustomerUserResponse>('/test/seed-user', payload)
+  return response.data
+}
+
 function mapUserStatus(s: string | null | undefined): PlatformUserDetail['status'] {
   const lower = (s ?? '').toLowerCase()
   if (lower.includes('suspend')) return 'SUSPENDED'
