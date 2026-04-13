@@ -54,7 +54,9 @@ export interface SendOtpRequest {
 
 export interface SendOtpResponse {
   session_id: string
-  expires_at: string
+  expires_at?: string
+  /** Alternate field name from some API builds */
+  expiry?: string
   delivery_method?: string
   masked_recipient?: string
 }
@@ -67,10 +69,13 @@ export interface VerifyOtpRequest {
 export interface VerifyOtpResponse {
   token?: string
   otp_token?: string
+  access_token?: string
   token_type?: string
   expires_at?: string
+  expiry?: string
   target_type?: string
   target_id?: string
+  detail?: unknown
 }
 
 export interface UpdateUserRequest {
@@ -219,10 +224,33 @@ export async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpRes
   return response.data
 }
 
-/** Returns the scoped token for `X-OTP-Token` (accepts `token` or legacy `otp_token`). */
+/** Pull scoped JWT/string for `X-OTP-Token` from various API response shapes. */
+export function extractOtpScopeToken(d: VerifyOtpResponse): string {
+  const raw = d as Record<string, unknown>
+  const nested =
+    raw.detail && typeof raw.detail === 'object' && raw.detail !== null
+      ? (raw.detail as Record<string, unknown>)
+      : null
+  const candidates: unknown[] = [
+    d.token,
+    d.otp_token,
+    d.access_token,
+    nested?.token,
+    nested?.otp_token,
+    nested?.access_token,
+  ]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) {
+      return c.trim()
+    }
+  }
+  return ''
+}
+
+/** Returns the scoped token for `X-OTP-Token` after `POST /otp/verify`. */
 export async function verifyUserOtpAndGetToken(sessionId: string, code: string): Promise<string> {
   const d = await verifyOtp({ session_id: sessionId, code })
-  return (d.token ?? d.otp_token ?? '').trim()
+  return extractOtpScopeToken(d)
 }
 
 function delay(ms: number): Promise<void> {

@@ -400,3 +400,10 @@
   background: var(--primary-fixed);
   color: var(--primary);
 }
+
+.user-list__otp-steps {
+  margin: 0 0 0.75rem 1rem;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

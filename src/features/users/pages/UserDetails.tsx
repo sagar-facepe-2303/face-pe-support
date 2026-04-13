@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { clearUserDetail, loadUserDetail } from '../userSlice'
 import * as userAPI from '../userAPI'
 import { getApiErrorMessage } from '../../../core/api/parseApiError'
+import { clearUserReadOtp, getUserReadOtp, normalizeUserPhoneKey, saveUserReadOtp } from '../userReadSession'
 import { ROUTES } from '../../../core/config/routes'
 import { UserInfo } from '../components/UserInfo'
 import { formatCurrency } from '../../../core/utils/helpers'
@@ -14,6 +15,7 @@ import './UserDetails.css'
 export function UserDetails() {
   const { userPhone } = useParams<{ userPhone: string }>()
   const dispatch = useAppDispatch()
+  const authUser = useAppSelector((s) => s.auth.user)
   const user = useAppSelector((s) => s.users.current)
   const transactions = useAppSelector((s) => s.users.transactions)
   const loading = useAppSelector((s) => s.users.loadingDetail)
@@ -27,13 +29,30 @@ export function UserDetails() {
   const [otpLocalError, setOtpLocalError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (userPhone) {
-      dispatch(loadUserDetail(userPhone))
+    if (!userPhone) return
+    const phoneKey = normalizeUserPhoneKey(userPhone)
+    const stored = authUser?.id ? getUserReadOtp(authUser.id, phoneKey) : null
+    if (stored) {
+      void dispatch(loadUserDetail({ id: phoneKey, otpToken: stored }))
+    } else {
+      void dispatch(loadUserDetail(phoneKey))
     }
     return () => {
       dispatch(clearUserDetail())
     }
-  }, [dispatch, userPhone])
+  }, [dispatch, userPhone, authUser?.id])
+
+  useEffect(() => {
+    if (!userPhone || !authUser?.id) return
+    const needOtpUi = Boolean(
+      error && !user && (detailLoadHttpStatus === 401 || detailLoadHttpStatus === 403)
+    )
+    if (!needOtpUi) return
+    const phoneKey = normalizeUserPhoneKey(userPhone)
+    if (getUserReadOtp(authUser.id, phoneKey)) {
+      clearUserReadOtp(authUser.id, phoneKey)
+    }
+  }, [userPhone, authUser?.id, error, user, detailLoadHttpStatus])
 
   if (!userPhone) {
     return <p role="alert">Missing user phone (path segment).</p>
@@ -52,10 +71,11 @@ export function UserDetails() {
 
   async function sendReadOtp() {
     if (!userPhone) return
+    const phoneKey = normalizeUserPhoneKey(userPhone)
     setOtpSending(true)
     setOtpLocalError(null)
     try {
-      const r = await userAPI.sendUserOtp('read_user', userPhone)
+      const r = await userAPI.sendUserOtp('read_user', phoneKey)
       setOtpSessionId(r.session_id)
     } catch (err) {
       setOtpLocalError(getApiErrorMessage(err))
@@ -69,6 +89,7 @@ export function UserDetails() {
       setOtpLocalError('Send a verification code first.')
       return
     }
+    const phoneKey = normalizeUserPhoneKey(userPhone)
     const code = otpCode.trim()
     if (!code) {
       setOtpLocalError('Enter the code from your email.')
@@ -82,7 +103,10 @@ export function UserDetails() {
         setOtpLocalError('Verification did not return a token. Try again.')
         return
       }
-      await dispatch(loadUserDetail({ id: userPhone, otpToken: token })).unwrap()
+      if (authUser?.id) {
+        saveUserReadOtp(authUser.id, phoneKey, token)
+      }
+      await dispatch(loadUserDetail({ id: phoneKey, otpToken: token })).unwrap()
       setOtpSessionId(null)
       setOtpCode('')
     } catch (err) {
