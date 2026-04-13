@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { parseKioskDisplayToBool } from '../../merchants/merchantAPI'
 import { updateMerchantKiosk } from '../../merchants/merchantSlice'
 import { clearKioskDetail, loadKioskDetail } from '../kioskSlice'
-import { ROUTES } from '../../../core/config/routes'
+import { ROUTES, hrefMerchantDetail } from '../../../core/config/routes'
 import { canManageKiosks } from '../../../core/constants/roles'
 import '../../../layout/Layout.css'
 import './KioskDetails.css'
@@ -132,7 +132,7 @@ export function KioskDetails() {
           <p className="kiosk-details__sync-line">Last sync: {k.lastSync}</p>
         </div>
         <div className="kiosk-details__actions">
-          <Link className="btn btn--secondary btn--sm" to={ROUTES.MERCHANT_DETAIL.replace(':merchantId', k.merchantId)}>
+          <Link className="btn btn--secondary btn--sm" to={hrefMerchantDetail(k.merchantId)}>
             View merchant
           </Link>
           {canMutate ? (
@@ -189,9 +189,9 @@ export function KioskDetails() {
             <dd>{k.serialNumber}</dd>
           </div>
           <div>
-            <dt>Merchant ID</dt>
+            <dt>Merchant</dt>
             <dd>
-              <Link to={ROUTES.MERCHANT_DETAIL.replace(':merchantId', k.merchantId)}>{k.merchantId}</Link>
+              <Link to={hrefMerchantDetail(k.merchantId)}>{k.merchantId}</Link>
             </dd>
           </div>
           <div>

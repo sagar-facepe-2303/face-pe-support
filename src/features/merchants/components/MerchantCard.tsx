@@ -40,7 +40,7 @@ export function MerchantCard({ merchant, onOpen }: MerchantCardProps) {
           type="button"
           className="merchant-card__kebab"
           aria-label={`Open actions for ${merchant.name}`}
-          onClick={() => onOpen(merchant.id)}
+          onClick={() => onOpen(merchant.pathKey)}
         >
           ⋮
         </button>

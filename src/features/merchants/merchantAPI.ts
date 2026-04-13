@@ -2,14 +2,14 @@
  * Merchants & kiosks (Support Portal, base path `/sp`).
  *
  * Flow (typical):
- * 1. **Directory (`/merchants`)** — Search by Support Portal merchant UUID. If `GET /merchants/{id}`
+ * 1. **Directory (`/merchants`)** — Search by merchant **email**. If `GET /merchants/{merchant_email}`
  *    returns 401/403, complete **read_merchant** OTP; token is sent as `X-OTP-Token` on subsequent GETs.
  *    Session snapshot is stored in `merchantReadSession` until logout.
- * 2. **Detail (`/merchants/:merchantId`)** — Loads the same merchant; uses stored read OTP when present.
- * 3. **Admin writes (Bearer only, `super_admin` | `merchant_admin`)** — These do not use the read OTP:
- *    - `PUT /merchants/{merchant_id}` — update metadata / status (`updateMerchant`).
- *    - `POST /merchants/{merchant_id}/kiosks` — register a kiosk (`createMerchantKiosk`).
- *    - `PUT /merchants/{merchant_id}/kiosks/{kiosk_id}` — update kiosk flags (`updateMerchantKiosk`).
+ * 2. **Detail (`/merchants/:merchantEmail`)** — Loads the same merchant; uses stored read OTP when present.
+ * 3. **Admin writes (Bearer only, `super_admin` | `merchant_admin` | `merchant_support`)** — These do not use the read OTP:
+ *    - `PUT /merchants/{merchant_email}` — update metadata / status (`updateMerchant`).
+ *    - `POST /merchants/{merchant_email}/kiosks` — register a kiosk (`createMerchantKiosk`).
+ *    - `PUT /merchants/{merchant_email}/kiosks/{kiosk_id}` — update kiosk flags (`updateMerchantKiosk`).
  *    After a write, detail is refreshed; if reads still require OTP, the stored read token is reused when available.
  */
 import { isAxiosError } from 'axios'
@@ -17,7 +17,12 @@ import api from '../../core/api/axios'
 import { parsePagedResponse, type Paged } from '../../core/api/pagination'
 import { formatRelativeTime } from '../../core/utils/helpers'
 
-/** Shapes returned by GET /merchants and GET /merchants/{id} (Pydantic-friendly). */
+/** Encode merchant email (or legacy id) for `/merchants/{segment}/…` paths. */
+export function merchantApiPathSegment(merchantKey: string): string {
+  return encodeURIComponent(merchantKey.trim())
+}
+
+/** Shapes returned by GET /merchants and GET /merchants/{merchant_email} (Pydantic-friendly). */
 export interface MerchantResponse {
   id: string
   /** External / business merchant id (may differ from row `id`) */
@@ -38,6 +43,8 @@ export interface MerchantResponse {
 
 export interface MerchantRow {
   id: string
+  /** Merchant email (or fallback) for `/merchants/{…}` URLs and OTP `target_merchant_email`. */
+  pathKey: string
   name: string
   category: string
   location: string
@@ -136,6 +143,8 @@ export interface UpdateKioskRequest {
 export interface KioskApiResponse {
   id: string
   merchant_id: string
+  /** When present, preferred for merchant-scoped routes (`/merchants/{email}/…`). */
+  merchant_email?: string
   serial_id: string
   is_online: boolean
   /** API may return strings or booleans (DB uses booleans). */
@@ -171,11 +180,17 @@ function merchantSubtitle(m: MerchantResponse): string {
   return m.id.length > 12 ? `${m.id.slice(0, 8)}…` : m.id
 }
 
+function merchantPathKey(m: MerchantResponse): string {
+  const email = (m.merchant_email ?? m.contact_email ?? '').trim()
+  return email || m.id
+}
+
 function mapMerchantResponseToRow(m: MerchantResponse): MerchantRow {
   const registeredAt = m.created_at ?? m.updated_at ?? new Date().toISOString()
   const phone = m.merchant_phone ?? m.contact_phone
   return {
     id: m.id,
+    pathKey: merchantPathKey(m),
     name: m.merchant_name,
     category: merchantSubtitle(m),
     location: phone?.trim() ? String(phone) : '—',
@@ -253,10 +268,11 @@ export async function fetchMerchantsPaged(params: ListMerchantsParams): Promise<
 }
 
 export async function fetchMerchantById(
-  id: string,
+  merchantKey: string,
   otpToken?: string | null
 ): Promise<{ detail: MerchantDetail; kiosks: MerchantKioskRow[] }> {
-  const response = await api.get<MerchantResponse & { kiosks?: KioskApiResponse[] }>(`/merchants/${id}`, {
+  const seg = merchantApiPathSegment(merchantKey)
+  const response = await api.get<MerchantResponse & { kiosks?: KioskApiResponse[] }>(`/merchants/${seg}`, {
     ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
   })
   const data = response.data
@@ -278,18 +294,18 @@ export interface SendMerchantOtpResponse {
 /** `POST /otp/send` for merchant targets — use `read_merchant` or `update_merchant`. */
 export async function sendMerchantOtp(
   purpose: MerchantOtpPurpose,
-  targetMerchantId: string
+  targetMerchantEmail: string
 ): Promise<SendMerchantOtpResponse> {
   const response = await api.post<SendMerchantOtpResponse>('/otp/send', {
     purpose,
-    target_merchant_id: targetMerchantId,
+    target_merchant_email: targetMerchantEmail.trim(),
   })
   return response.data
 }
 
 /** Convenience: `purpose: read_merchant` (see Merchant API Guide). */
-export async function sendMerchantReadOtp(targetMerchantId: string): Promise<SendMerchantOtpResponse> {
-  return sendMerchantOtp('read_merchant', targetMerchantId)
+export async function sendMerchantReadOtp(targetMerchantEmail: string): Promise<SendMerchantOtpResponse> {
+  return sendMerchantOtp('read_merchant', targetMerchantEmail)
 }
 
 export interface VerifyOtpResponse {
@@ -325,11 +341,12 @@ function parseKioskListPayload(data: unknown): KioskApiResponse[] {
 }
 
 export async function fetchMerchantKiosks(
-  merchantId: string,
+  merchantKey: string,
   otpToken?: string | null
 ): Promise<MerchantKioskRow[]> {
   try {
-    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`, {
+    const seg = merchantApiPathSegment(merchantKey)
+    const response = await api.get<unknown>(`/merchants/${seg}/kiosks`, {
       ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
     })
     return parseKioskListPayload(response.data).map((x) => mapKioskToMerchantRow(x))
@@ -342,9 +359,10 @@ export async function fetchMerchantKiosks(
 }
 
 /** Raw kiosk rows for fleet mapping (same endpoint as fetchMerchantKiosks). */
-export async function fetchMerchantKiosksRaw(merchantId: string): Promise<KioskApiResponse[]> {
+export async function fetchMerchantKiosksRaw(merchantKey: string): Promise<KioskApiResponse[]> {
   try {
-    const response = await api.get<unknown>(`/merchants/${merchantId}/kiosks`)
+    const seg = merchantApiPathSegment(merchantKey)
+    const response = await api.get<unknown>(`/merchants/${seg}/kiosks`)
     return parseKioskListPayload(response.data)
   } catch (e) {
     if (isAxiosError(e) && [404, 405].includes(e.response?.status ?? 0)) {
@@ -360,39 +378,44 @@ export async function createMerchant(payload: CreateMerchantRequest): Promise<Me
 }
 
 export async function updateMerchant(
-  merchantId: string,
+  merchantKey: string,
   payload: UpdateMerchantRequest,
   otpToken?: string | null
 ): Promise<MerchantResponse> {
-  const response = await api.put<MerchantResponse>(`/merchants/${merchantId}`, payload, {
+  const seg = merchantApiPathSegment(merchantKey)
+  const response = await api.put<MerchantResponse>(`/merchants/${seg}`, payload, {
     ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
   })
   return response.data
 }
 
-export async function deleteMerchant(merchantId: string, otpToken?: string | null): Promise<void> {
-  await api.delete(`/merchants/${merchantId}`, {
+export async function deleteMerchant(merchantKey: string, otpToken?: string | null): Promise<void> {
+  const seg = merchantApiPathSegment(merchantKey)
+  await api.delete(`/merchants/${seg}`, {
     ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
   })
 }
 
 export async function createMerchantKiosk(
-  merchantId: string,
+  merchantKey: string,
   payload: CreateKioskRequest
 ): Promise<KioskApiResponse> {
-  const response = await api.post<KioskApiResponse>(`/merchants/${merchantId}/kiosks`, payload)
+  const seg = merchantApiPathSegment(merchantKey)
+  const response = await api.post<KioskApiResponse>(`/merchants/${seg}/kiosks`, payload)
   return response.data
 }
 
 export async function updateMerchantKiosk(
-  merchantId: string,
+  merchantKey: string,
   kioskId: string,
   payload: UpdateKioskRequest
 ): Promise<KioskApiResponse> {
-  const response = await api.put<KioskApiResponse>(`/merchants/${merchantId}/kiosks/${kioskId}`, payload)
+  const seg = merchantApiPathSegment(merchantKey)
+  const response = await api.put<KioskApiResponse>(`/merchants/${seg}/kiosks/${kioskId}`, payload)
   return response.data
 }
 
-export async function deleteMerchantKiosk(merchantId: string, kioskId: string): Promise<void> {
-  await api.delete(`/merchants/${merchantId}/kiosks/${kioskId}`)
+export async function deleteMerchantKiosk(merchantKey: string, kioskId: string): Promise<void> {
+  const seg = merchantApiPathSegment(merchantKey)
+  await api.delete(`/merchants/${seg}/kiosks/${kioskId}`)
 }

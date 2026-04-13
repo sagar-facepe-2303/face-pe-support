@@ -76,7 +76,7 @@ export function KioskList() {
       return
     }
     if (isMerchantAdmin && !scopedListId) {
-      setSearchError('Set your portal merchant id below (row id) so kiosk lookup can fall back if needed.')
+      setSearchError('Set your merchant email below so kiosk lookup can fall back if needed.')
       return
     }
     setSearchError(null)
@@ -108,7 +108,7 @@ export function KioskList() {
     ev.preventDefault()
     const targetMerchantId = kioskMerchantId.trim()
     if (!targetMerchantId) {
-      setAddError('Enter the portal merchant row id (see hint below).')
+      setAddError('Enter the merchant email (see hint below).')
       return
     }
     if (!kSerial.trim()) {
@@ -147,8 +147,8 @@ export function KioskList() {
           <h1 className="page-title">Kiosk inventory</h1>
           <p className="page-desc">
             Search by kiosk id, then view device fields and the latest <code>POST /kiosks/{"{id}"}/heartbeat</code> ack.
-            Register requires the merchant <strong>portal row id</strong> (not the external <code>merchant_id</code>{' '}
-            field).
+            Register kiosk uses the merchant&apos;s primary <strong>email</strong> in{' '}
+            <code>POST /merchants/{"{email}"}/kiosks</code>.
           </p>
         </div>
         <div className="kiosk-list__actions">
@@ -163,19 +163,19 @@ export function KioskList() {
       {isMerchantAdmin && !user?.merchantId ? (
         <section className="kiosk-list__scope-compact card-surface" aria-label="Merchant scope">
           <label className="kiosk-list__scope-label">
-            <span className="kiosk-list__field-label">Portal merchant id (for lookup fallback)</span>
+            <span className="kiosk-list__field-label">Merchant email (for lookup fallback)</span>
             <input
               className="kiosk-list__input"
               type="text"
               value={scopeMerchantIdInput}
               onChange={(e) => setScopeMerchantIdInput(e.target.value)}
-              placeholder="Row id from GET /merchants (id), same as kiosk registration path"
+              placeholder="Same email used in GET /merchants/{email}/kiosks"
               autoComplete="off"
             />
           </label>
           <p className="kiosk-list__scope-hint">
             Needed when <code>GET /kiosks/{"{id}"}</code> is unavailable and the app resolves the device via{' '}
-            <code>GET /merchants/{"{id}"}/kiosks</code>.
+            <code>GET /merchants/{"{email}"}/kiosks</code>.
           </p>
         </section>
       ) : null}
@@ -227,7 +227,7 @@ export function KioskList() {
             <dd>
               <code>{detail.id}</code>
             </dd>
-            <dt>Merchant id</dt>
+            <dt>Merchant</dt>
             <dd>
               <code>{detail.merchantId}</code>
             </dd>
@@ -290,21 +290,19 @@ export function KioskList() {
             <h2 className="kiosk-list__modal-title">Register kiosk</h2>
             <form onSubmit={handleAddKiosk} className="kiosk-list__modal-form">
               <label className="kiosk-list__label">
-                Portal merchant id (row id)
+                Merchant email
                 <input
                   className="kiosk-list__input"
                   required
                   value={kioskMerchantId}
                   onChange={(e) => setKioskMerchantId(e.target.value)}
-                  placeholder="e.g. c36bea36-eb90-4daf-90b5-b3b924c39b26"
+                  placeholder="e.g. merchant@example.com"
                   autoComplete="off"
                 />
               </label>
               <p className="kiosk-list__modal-hint">
-                Path is <code>POST /merchants/{"{id}"}/kiosks</code> where <code>{"{id}"}</code> is the merchant row’s{' '}
-                <strong>id</strong> from the API (returned by <code>POST /merchants</code>). Do <strong>not</strong> use
-                the separate <code>merchant_id</code> field if it differs—that value is an external reference; using it
-                causes &quot;Merchant not found&quot;.
+                Path is <code>POST /merchants/{"{email}"}/kiosks</code> using the merchant&apos;s primary email (same as{' '}
+                <code>GET /merchants/{"{email}"}</code>).
               </p>
               <label className="kiosk-list__label">
                 Serial ID

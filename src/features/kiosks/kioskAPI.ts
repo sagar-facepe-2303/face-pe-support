@@ -80,9 +80,10 @@ function deriveHealth(k: KioskApiResponse): { healthPct: number; healthLabel: Ki
 function mapKioskResponseToRow(k: KioskApiResponse): KioskRow {
   const { healthPct, healthLabel } = deriveHealth(k)
   const ts = k.last_heartbeat_at ?? k.updated_at
+  const merchantPathKey = (k.merchant_email?.trim() || k.merchant_id || '').trim()
   return {
     id: k.id,
-    merchantId: k.merchant_id,
+    merchantId: merchantPathKey,
     serialId: k.serial_id,
     location: k.serial_id,
     networkStatus: k.is_online ? 'ONLINE' : 'OFFLINE',

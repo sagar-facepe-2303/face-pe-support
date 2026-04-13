@@ -22,7 +22,7 @@ import './MerchantList.css'
 import './MerchantDetails.css'
 
 export function MerchantDetails() {
-  const { merchantId } = useParams<{ merchantId: string }>()
+  const { merchantEmail } = useParams<{ merchantEmail: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const user = useAppSelector((s) => s.auth.user)
@@ -65,17 +65,17 @@ export function MerchantDetails() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (!merchantId || !user?.id) return
+    if (!merchantEmail || !user?.id) return
     const saved = loadMerchantReadSession(user.id)
     const loadArg =
-      saved?.merchantId === merchantId && saved.otpToken
-        ? { id: merchantId, otpToken: saved.otpToken }
-        : merchantId
+      saved?.merchantEmail === merchantEmail && saved.otpToken
+        ? { id: merchantEmail, otpToken: saved.otpToken }
+        : merchantEmail
     dispatch(loadMerchantDetail(loadArg))
     return () => {
       dispatch(clearMerchantDetail())
     }
-  }, [dispatch, merchantId, user?.id])
+  }, [dispatch, merchantEmail, user?.id])
 
   useEffect(() => {
     if (merchant && editOpen) {
@@ -86,8 +86,8 @@ export function MerchantDetails() {
     }
   }, [merchant, editOpen])
 
-  if (!merchantId) {
-    return <p role="alert">Missing merchant identifier.</p>
+  if (!merchantEmail) {
+    return <p role="alert">Missing merchant email.</p>
   }
 
   if (loading && !merchant) {
@@ -102,11 +102,11 @@ export function MerchantDetails() {
     Boolean(error && !merchant && (detailLoadHttpStatus === 401 || detailLoadHttpStatus === 403))
 
   async function sendReadOtp() {
-    if (!merchantId) return
+    if (!merchantEmail) return
     setOtpSending(true)
     setOtpLocalError(null)
     try {
-      const r = await merchantAPI.sendMerchantReadOtp(merchantId)
+      const r = await merchantAPI.sendMerchantReadOtp(merchantEmail)
       setOtpSessionId(r.session_id)
     } catch (err) {
       setOtpLocalError(getApiErrorMessage(err))
@@ -116,7 +116,7 @@ export function MerchantDetails() {
   }
 
   async function verifyOtpAndReload() {
-    if (!merchantId || !otpSessionId) {
+    if (!merchantEmail || !otpSessionId) {
       setOtpLocalError('Send a verification code first.')
       return
     }
@@ -133,7 +133,7 @@ export function MerchantDetails() {
         setOtpLocalError('Verification did not return a token. Try again.')
         return
       }
-      await dispatch(loadMerchantDetail({ id: merchantId, otpToken: token })).unwrap()
+      await dispatch(loadMerchantDetail({ id: merchantEmail, otpToken: token })).unwrap()
       setOtpSessionId(null)
       setOtpCode('')
     } catch (err) {
@@ -155,7 +155,7 @@ export function MerchantDetails() {
         <p className="merchant-details__otp-intro">
           The Support Portal requires a one-time email code to <strong>read</strong> merchant details (this is separate
           from logging in). Super admin and merchant admin still need this step when the API returns 401/403 on{' '}
-          <code>GET /merchants/{"{id}"}</code>.
+          <code>GET /merchants/{"{email}"}</code>.
         </p>
         <div className="merchant-list__otp card-surface" role="region" aria-label="Verify merchant access">
           <p className="merchant-list__otp-title">Verify access</p>
@@ -214,13 +214,13 @@ export function MerchantDetails() {
 
   async function onEditSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!merchantId) return
+    if (!merchantEmail) return
     setEditError(null)
     setEditSubmitting(true)
     try {
       await dispatch(
         updateMerchantRecord({
-          merchantId,
+          merchantId: merchantEmail,
           payload: {
             merchant_name: editName.trim(),
             merchant_email: editEmail.trim(),
@@ -239,13 +239,13 @@ export function MerchantDetails() {
 
   async function onAddKiosk(e: FormEvent) {
     e.preventDefault()
-    if (!merchantId) return
+    if (!merchantEmail) return
     setKioskError(null)
     setKioskSubmitting(true)
     try {
       await dispatch(
         createMerchantKiosk({
-          merchantId,
+          merchantId: merchantEmail,
           payload: merchantAPI.buildCreateKioskPayload(kSerial.trim(), kOnline, kFace, kCam),
         })
       ).unwrap()
@@ -263,13 +263,13 @@ export function MerchantDetails() {
 
   async function onEditKioskSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!merchantId || !editKiosk) return
+    if (!merchantEmail || !editKiosk) return
     setEkError(null)
     setEkSubmitting(true)
     try {
       await dispatch(
         updateMerchantKiosk({
-          merchantId,
+          merchantId: merchantEmail,
           kioskId: editKiosk.id,
           payload: {
             is_online: editKiosk.isOnline,
@@ -288,11 +288,11 @@ export function MerchantDetails() {
   }
 
   async function onDeleteMerchant() {
-    if (!merchantId || !merchant) return
+    if (!merchantEmail || !merchant) return
     if (!window.confirm(`Delete merchant “${merchant.name}”?`)) return
     setDeleting(true)
     try {
-      await dispatch(removeMerchant(merchantId)).unwrap()
+      await dispatch(removeMerchant(merchantEmail)).unwrap()
       navigate(ROUTES.MERCHANTS)
     } catch {
       /* slice error */
@@ -302,10 +302,10 @@ export function MerchantDetails() {
   }
 
   async function onDeleteKiosk(k: MerchantKioskRow) {
-    if (!merchantId) return
+    if (!merchantEmail) return
     if (!window.confirm(`Remove kiosk ${k.serialId}?`)) return
     try {
-      await dispatch(deleteMerchantKiosk({ merchantId, kioskId: k.id })).unwrap()
+      await dispatch(deleteMerchantKiosk({ merchantId: merchantEmail, kioskId: k.id })).unwrap()
     } catch {
       /* slice */
     }

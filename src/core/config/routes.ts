@@ -2,7 +2,8 @@ export const ROUTES = {
   LOGIN: '/login',
   HOME: '/',
   MERCHANTS: '/merchants',
-  MERCHANT_DETAIL: '/merchants/:merchantId',
+  /** Path param is merchant email (URL-encoded in links). */
+  MERCHANT_DETAIL: '/merchants/:merchantEmail',
   KIOSKS: '/kiosks',
   KIOSK_DETAIL: '/kiosks/:kioskId',
   USERS: '/users',
@@ -14,3 +15,7 @@ export const ROUTES = {
 } as const
 
 export type RouteKey = keyof typeof ROUTES
+
+export function hrefMerchantDetail(merchantEmail: string): string {
+  return `${ROUTES.MERCHANTS}/${encodeURIComponent(merchantEmail.trim())}`
+}

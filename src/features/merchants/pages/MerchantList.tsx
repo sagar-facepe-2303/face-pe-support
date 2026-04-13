@@ -14,7 +14,7 @@ import {
   loadMerchantReadSession,
   saveMerchantReadSession,
 } from "../merchantReadSession";
-import { ROUTES } from "../../../core/config/routes";
+import { hrefMerchantDetail } from "../../../core/config/routes";
 import { canManageMerchants } from "../../../core/constants/roles";
 import { formatDisplayDate } from "../../../core/utils/helpers";
 import { getApiErrorMessage } from "../../../core/api/parseApiError";
@@ -35,9 +35,9 @@ export function MerchantList() {
     kiosks: MerchantKioskRow[];
   } | null>(null);
 
-  /** OTP read token for `X-OTP-Token`, scoped to `tokenMerchantId`. */
+  /** OTP read token for `X-OTP-Token`, scoped to the merchant email used in API paths. */
   const [otpReadToken, setOtpReadToken] = useState<string | null>(null);
-  const [tokenMerchantId, setTokenMerchantId] = useState<string | null>(null);
+  const [tokenMerchantKey, setTokenMerchantKey] = useState<string | null>(null);
 
   const [otpHint, setOtpHint] = useState(false);
   const [otpSessionId, setOtpSessionId] = useState<string | null>(null);
@@ -89,10 +89,10 @@ export function MerchantList() {
     if (!user?.id) return;
     const saved = loadMerchantReadSession(user.id);
     if (!saved) return;
-    setMerchantIdInput(saved.merchantId);
+    setMerchantIdInput(saved.merchantEmail);
     setResult(saved.result);
     setOtpReadToken(saved.otpToken);
-    setTokenMerchantId(saved.merchantId);
+    setTokenMerchantKey(saved.merchantEmail);
     setOtpHint(false);
     setOtpSessionId(null);
     setOtpCode("");
@@ -118,13 +118,18 @@ export function MerchantList() {
       setMerchantInlineError("Name and email are required.");
       return;
     }
+    const merchantPathKey = tokenMerchantKey ?? merchantIdInput.trim();
+    if (!merchantPathKey) {
+      setMerchantInlineError("Reload this merchant before saving.");
+      return;
+    }
     setMerchantSaving(true);
     setMerchantInlineError(null);
     setMerchantInlineOk(null);
     try {
       await dispatch(
         updateMerchantRecord({
-          merchantId: d.id,
+          merchantId: merchantPathKey,
           payload: {
             merchant_name: name,
             merchant_email: email,
@@ -160,12 +165,14 @@ export function MerchantList() {
   async function handleSaveKioskModal(e: FormEvent) {
     e.preventDefault();
     if (!d || !kioskEdit || !canMutate) return;
+    const merchantPathKey = tokenMerchantKey ?? merchantIdInput.trim();
+    if (!merchantPathKey) return;
     setKioskSaving(true);
     setKioskInlineError(null);
     try {
       await dispatch(
         updateMerchantKiosk({
-          merchantId: d.id,
+          merchantId: merchantPathKey,
           kioskId: kioskEdit.id,
           payload: {
             is_online: kioskOnline,
@@ -189,13 +196,13 @@ export function MerchantList() {
   async function loadMerchant(explicitOtpToken?: string | null) {
     const id = merchantIdInput.trim();
     if (!id) {
-      setSearchError("Enter a merchant id.");
+      setSearchError("Enter a merchant email.");
       return;
     }
     const tokenToUse =
       explicitOtpToken !== undefined && explicitOtpToken !== null
         ? explicitOtpToken
-        : tokenMerchantId === id
+        : tokenMerchantKey === id
         ? otpReadToken
         : null;
     const hadToken = !!tokenToUse;
@@ -219,11 +226,11 @@ export function MerchantList() {
       setOtpSessionId(null);
       setOtpCode("");
       setOtpReadToken(tokenToUse ?? null);
-      setTokenMerchantId(id);
+      setTokenMerchantKey(id);
       if (user?.id) {
         saveMerchantReadSession({
           userId: user.id,
-          merchantId: id,
+          merchantEmail: id,
           otpToken: tokenToUse ?? null,
           result: { detail, kiosks: kiosksFinal },
         });
@@ -235,7 +242,7 @@ export function MerchantList() {
         if (hadToken) {
           clearMerchantReadSession();
           setOtpReadToken(null);
-          setTokenMerchantId(null);
+          setTokenMerchantKey(null);
         }
         setOtpHint(true);
         setSearchError(
@@ -259,7 +266,7 @@ export function MerchantList() {
   async function handleSendOtp() {
     const id = merchantIdInput.trim();
     if (!id) {
-      setOtpLocalError("Enter a merchant id above first.");
+      setOtpLocalError("Enter the merchant email above first.");
       return;
     }
     setOtpSending(true);
@@ -300,8 +307,8 @@ export function MerchantList() {
     }
   }
 
-  function openDetailPage(portalId: string) {
-    navigate(ROUTES.MERCHANT_DETAIL.replace(":merchantId", portalId));
+  function openDetailPage(merchantEmail: string) {
+    navigate(hrefMerchantDetail(merchantEmail));
   }
 
   async function handleCreate(e: FormEvent) {
@@ -319,8 +326,12 @@ export function MerchantList() {
             : {}),
         }),
       ).unwrap();
-      if (created?.id) {
-        setCreatedPortalMerchantId(created.id);
+      const registerKey =
+        created.merchant_email?.trim() ||
+        formEmail.trim() ||
+        created.id;
+      if (registerKey) {
+        setCreatedPortalMerchantId(registerKey);
       }
       setCreateOpen(false);
       setFormName("");
@@ -343,7 +354,7 @@ export function MerchantList() {
           <p className="page-kicker">Management</p>
           <h1 className="page-title">Merchant directory</h1>
           <p className="page-desc">
-            Look up a merchant by Support Portal id. If the API requires it,
+            Look up a merchant by email. If the API requires it,
             verify with a one-time code. After a successful verification, that
             merchant stays available here until you sign out (stored for this
             browser tab). <strong>Super admin</strong> and{" "}
@@ -373,9 +384,9 @@ export function MerchantList() {
           role="status"
         >
           <p className="merchant-list__success-title">
-            <strong>Merchant saved.</strong> Register kiosks with this Support
-            Portal merchant <strong>id</strong> (the value in{" "}
-            <code>POST /merchants/{"{this id}"}/kiosks</code>):
+            <strong>Merchant saved.</strong> Register kiosks using this merchant{" "}
+            <strong>email</strong> in{" "}
+            <code>POST /merchants/{"{email}"}/kiosks</code>:
           </p>
           <div className="merchant-list__portal-id-row">
             <code className="merchant-list__portal-id">
@@ -388,7 +399,7 @@ export function MerchantList() {
                 void navigator.clipboard.writeText(createdPortalMerchantId);
               }}
             >
-              Copy id
+              Copy email
             </button>
             <button
               type="button"
@@ -399,9 +410,8 @@ export function MerchantList() {
             </button>
           </div>
           <p className="merchant-list__field-hint">
-            If kiosk registration says &quot;Merchant not found&quot;, the id in
-            the form does not match any merchant row in this environment—use the
-            id above, or create the merchant here first.
+            If kiosk registration says &quot;Merchant not found&quot;, the email in
+            the form does not match this environment—use the value above, or create the merchant here first.
           </p>
         </div>
       ) : null}
@@ -422,7 +432,7 @@ export function MerchantList() {
             id="merchant-id-search"
             className="merchant-list__search-hero-input"
             type="search"
-            placeholder="Support Portal merchant id (UUID)…"
+            placeholder="Merchant email (e.g. name@example.com)…"
             value={merchantIdInput}
             onChange={(e) => {
               const v = e.target.value;
@@ -430,10 +440,10 @@ export function MerchantList() {
               setOtpSessionId(null);
               setOtpHint(false);
               const tid = v.trim();
-              if (result && (!tid || tid !== result.detail.id)) {
+              if (result && (!tid || tid !== result.detail.pathKey)) {
                 setResult(null);
                 setOtpReadToken(null);
-                setTokenMerchantId(null);
+                setTokenMerchantKey(null);
                 clearMerchantReadSession();
               }
             }}
@@ -448,9 +458,9 @@ export function MerchantList() {
           </button>
         </div>
         <p className="merchant-list__search-hero-hint">
-          Use the Support Portal merchant <strong>id</strong> from{" "}
-          <code>POST /merchants</code> (same id used in{" "}
-          <code>/merchants/{"{id}"}/kiosks</code>). If the API returns 401,
+          Use the merchant&apos;s primary <strong>email</strong> in{" "}
+          <code>GET /merchants/{"{email}"}</code> and{" "}
+          <code>/merchants/{"{email}"}/kiosks</code>. If the API returns 401,
           complete email verification below—this is separate from super admin /
           merchant admin login.
         </p>
@@ -531,7 +541,7 @@ export function MerchantList() {
               <button
                 type="button"
                 className="btn btn--secondary btn--sm"
-                onClick={() => openDetailPage(d.id)}
+                onClick={() => openDetailPage(d.pathKey)}
               >
                 Open full page
               </button>

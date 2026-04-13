@@ -25,7 +25,7 @@ export interface MerchantListMeta {
 
 export interface MerchantDetailRejected {
   message: string
-  /** Present when GET /merchants/{id} failed with 401/403 and OTP may be required */
+  /** Present when GET /merchants/{merchant_email} failed with 401/403 and OTP may be required */
   httpStatus?: number
 }
 
@@ -116,11 +116,11 @@ export const createMerchant = createAsyncThunk(
 
 function detailReloadArg(
   getState: () => unknown,
-  merchantId: string,
+  merchantEmail: string,
 ): string | { id: string; otpToken?: string | null } {
   const uid = (getState() as RootState).auth.user?.id
-  const otp = uid ? getMerchantReadOtpForMerchant(uid, merchantId) : null
-  return otp ? { id: merchantId, otpToken: otp } : merchantId
+  const otp = uid ? getMerchantReadOtpForMerchant(uid, merchantEmail) : null
+  return otp ? { id: merchantEmail, otpToken: otp } : merchantEmail
 }
 
 export const updateMerchantRecord = createAsyncThunk(
