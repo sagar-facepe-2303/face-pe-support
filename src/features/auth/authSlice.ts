@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { clearMerchantReadSession } from '../merchants/merchantReadSession'
 import * as authAPI from './authAPI'
 import type { LoginPayload } from './authAPI'
 import type { AuthState, AuthUser } from './types'
@@ -64,6 +65,7 @@ const authSlice = createSlice({
         state.error = (action.payload as string) ?? 'Sign in failed'
       })
       .addCase(logout.fulfilled, (state) => {
+        clearMerchantReadSession()
         state.user = null
         state.token = null
         state.refreshToken = null

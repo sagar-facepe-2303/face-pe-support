@@ -1,3 +1,17 @@
+/**
+ * Merchants & kiosks (Support Portal, base path `/sp`).
+ *
+ * Flow (typical):
+ * 1. **Directory (`/merchants`)** — Search by Support Portal merchant UUID. If `GET /merchants/{id}`
+ *    returns 401/403, complete **read_merchant** OTP; token is sent as `X-OTP-Token` on subsequent GETs.
+ *    Session snapshot is stored in `merchantReadSession` until logout.
+ * 2. **Detail (`/merchants/:merchantId`)** — Loads the same merchant; uses stored read OTP when present.
+ * 3. **Admin writes (Bearer only, `super_admin` | `merchant_admin`)** — These do not use the read OTP:
+ *    - `PUT /merchants/{merchant_id}` — update metadata / status (`updateMerchant`).
+ *    - `POST /merchants/{merchant_id}/kiosks` — register a kiosk (`createMerchantKiosk`).
+ *    - `PUT /merchants/{merchant_id}/kiosks/{kiosk_id}` — update kiosk flags (`updateMerchantKiosk`).
+ *    After a write, detail is refreshed; if reads still require OTP, the stored read token is reused when available.
+ */
 import { isAxiosError } from 'axios'
 import api from '../../core/api/axios'
 import { parsePagedResponse, type Paged } from '../../core/api/pagination'

@@ -1,10 +1,15 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { createMerchant } from "../merchantSlice";
 import * as merchantAPI from "../merchantAPI";
 import type { MerchantDetail, MerchantKioskRow } from "../merchantAPI";
+import {
+  clearMerchantReadSession,
+  loadMerchantReadSession,
+  saveMerchantReadSession,
+} from "../merchantReadSession";
 import { ROUTES } from "../../../core/config/routes";
 import { canManageMerchants } from "../../../core/constants/roles";
 import { formatDisplayDate } from "../../../core/utils/helpers";
@@ -26,6 +31,10 @@ export function MerchantList() {
     kiosks: MerchantKioskRow[];
   } | null>(null);
 
+  /** OTP read token for `X-OTP-Token`, scoped to `tokenMerchantId`. */
+  const [otpReadToken, setOtpReadToken] = useState<string | null>(null);
+  const [tokenMerchantId, setTokenMerchantId] = useState<string | null>(null);
+
   const [otpHint, setOtpHint] = useState(false);
   const [otpSessionId, setOtpSessionId] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState("");
@@ -44,35 +53,76 @@ export function MerchantList() {
     string | null
   >(null);
 
-  async function loadMerchant(otpToken?: string | null) {
+  useEffect(() => {
+    if (!user?.id) return;
+    const saved = loadMerchantReadSession(user.id);
+    if (!saved) return;
+    setMerchantIdInput(saved.merchantId);
+    setResult(saved.result);
+    setOtpReadToken(saved.otpToken);
+    setTokenMerchantId(saved.merchantId);
+    setOtpHint(false);
+    setOtpSessionId(null);
+    setOtpCode("");
+    setSearchError(null);
+  }, [user?.id]);
+
+  async function loadMerchant(explicitOtpToken?: string | null) {
     const id = merchantIdInput.trim();
     if (!id) {
       setSearchError("Enter a merchant id.");
       return;
     }
+    const tokenToUse =
+      explicitOtpToken !== undefined && explicitOtpToken !== null
+        ? explicitOtpToken
+        : tokenMerchantId === id
+          ? otpReadToken
+          : null;
+    const hadToken = !!tokenToUse;
+
     setSearchError(null);
     setOtpLocalError(null);
     setSearchLoading(true);
     try {
       const { detail, kiosks } = await merchantAPI.fetchMerchantById(
         id,
-        otpToken,
+        tokenToUse,
       );
       const kiosksFinal =
         kiosks.length > 0
           ? kiosks
-          : await merchantAPI.fetchMerchantKiosks(id, otpToken).catch(() => []);
+          : await merchantAPI
+              .fetchMerchantKiosks(id, tokenToUse)
+              .catch(() => []);
       setResult({ detail, kiosks: kiosksFinal });
       setOtpHint(false);
       setOtpSessionId(null);
       setOtpCode("");
+      setOtpReadToken(tokenToUse ?? null);
+      setTokenMerchantId(id);
+      if (user?.id) {
+        saveMerchantReadSession({
+          userId: user.id,
+          merchantId: id,
+          otpToken: tokenToUse ?? null,
+          result: { detail, kiosks: kiosksFinal },
+        });
+      }
     } catch (e) {
       setResult(null);
       const st = isAxiosError(e) ? e.response?.status : undefined;
-      if ((st === 403 || st === 401) && !otpToken) {
+      if (st === 403 || st === 401) {
+        if (hadToken) {
+          clearMerchantReadSession();
+          setOtpReadToken(null);
+          setTokenMerchantId(null);
+        }
         setOtpHint(true);
         setSearchError(
-          "Reading this merchant requires email verification (in addition to your login). Send a code, then enter it below.",
+          hadToken
+            ? "Merchant access could not be refreshed. Send a new code and verify again."
+            : "Reading this merchant requires email verification (in addition to your login). Send a code, then enter it below.",
         );
       } else {
         setSearchError(getApiErrorMessage(e));
@@ -177,7 +227,13 @@ export function MerchantList() {
           <h1 className="page-title">Merchant directory</h1>
           <p className="page-desc">
             Look up a merchant by Support Portal id. If the API requires it,
-            verify with a one-time code.
+            verify with a one-time code. After a successful verification, that
+            merchant stays available here until you sign out (stored for this
+            browser tab). Open <strong>Open full page</strong> to edit merchant
+            details or manage kiosks (admin API:{" "}
+            <code>PUT /merchants/{"{id}"}</code>,{" "}
+            <code>POST /merchants/{"{id}"}/kiosks</code>,{" "}
+            <code>PUT …/kiosks/{"{kiosk_id}"}</code>).
           </p>
         </div>
         <div className="merchant-list__actions">
@@ -254,9 +310,17 @@ export function MerchantList() {
             placeholder="Support Portal merchant id (UUID)…"
             value={merchantIdInput}
             onChange={(e) => {
-              setMerchantIdInput(e.target.value);
+              const v = e.target.value;
+              setMerchantIdInput(v);
               setOtpSessionId(null);
               setOtpHint(false);
+              const tid = v.trim();
+              if (result && (!tid || tid !== result.detail.id)) {
+                setResult(null);
+                setOtpReadToken(null);
+                setTokenMerchantId(null);
+                clearMerchantReadSession();
+              }
             }}
             autoComplete="off"
           />

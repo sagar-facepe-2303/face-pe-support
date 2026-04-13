@@ -12,6 +12,7 @@ import {
 } from '../merchantSlice'
 import * as merchantAPI from '../merchantAPI'
 import type { MerchantKioskRow } from '../merchantAPI'
+import { loadMerchantReadSession } from '../merchantReadSession'
 import { ROUTES } from '../../../core/config/routes'
 import { canManageMerchants } from '../../../core/constants/roles'
 import { formatDisplayDate } from '../../../core/utils/helpers'
@@ -62,13 +63,17 @@ export function MerchantDetails() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (merchantId) {
-      dispatch(loadMerchantDetail(merchantId))
-    }
+    if (!merchantId || !user?.id) return
+    const saved = loadMerchantReadSession(user.id)
+    const loadArg =
+      saved?.merchantId === merchantId && saved.otpToken
+        ? { id: merchantId, otpToken: saved.otpToken }
+        : merchantId
+    dispatch(loadMerchantDetail(loadArg))
     return () => {
       dispatch(clearMerchantDetail())
     }
-  }, [dispatch, merchantId])
+  }, [dispatch, merchantId, user?.id])
 
   useEffect(() => {
     if (merchant && editOpen) {

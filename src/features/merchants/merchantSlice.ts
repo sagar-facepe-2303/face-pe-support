@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { isAxiosError } from 'axios'
 import type { RootState } from '../../app/store'
 import { getApiErrorMessage } from '../../core/api/parseApiError'
+import { getMerchantReadOtpForMerchant } from './merchantReadSession'
 import * as merchantAPI from './merchantAPI'
 import type {
   CreateKioskRequest,
@@ -113,6 +114,15 @@ export const createMerchant = createAsyncThunk(
   }
 )
 
+function detailReloadArg(
+  getState: () => unknown,
+  merchantId: string,
+): string | { id: string; otpToken?: string | null } {
+  const uid = (getState() as RootState).auth.user?.id
+  const otp = uid ? getMerchantReadOtpForMerchant(uid, merchantId) : null
+  return otp ? { id: merchantId, otpToken: otp } : merchantId
+}
+
 export const updateMerchantRecord = createAsyncThunk(
   'merchants/update',
   async (
@@ -123,7 +133,7 @@ export const updateMerchantRecord = createAsyncThunk(
       await merchantAPI.updateMerchant(merchantId, payload)
       const { lastListParams } = (getState() as RootState).merchants
       await dispatch(loadMerchants(lastListParams)).unwrap()
-      await dispatch(loadMerchantDetail(merchantId)).unwrap()
+      await dispatch(loadMerchantDetail(detailReloadArg(getState, merchantId))).unwrap()
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }
@@ -147,11 +157,11 @@ export const createMerchantKiosk = createAsyncThunk(
   'merchants/createKiosk',
   async (
     { merchantId, payload }: { merchantId: string; payload: CreateKioskRequest },
-    { dispatch, rejectWithValue }
+    { dispatch, getState, rejectWithValue }
   ) => {
     try {
       await merchantAPI.createMerchantKiosk(merchantId, payload)
-      await dispatch(loadMerchantDetail(merchantId)).unwrap()
+      await dispatch(loadMerchantDetail(detailReloadArg(getState, merchantId))).unwrap()
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }
@@ -166,11 +176,11 @@ export const updateMerchantKiosk = createAsyncThunk(
       kioskId,
       payload,
     }: { merchantId: string; kioskId: string; payload: UpdateKioskRequest },
-    { dispatch, rejectWithValue }
+    { dispatch, getState, rejectWithValue }
   ) => {
     try {
       await merchantAPI.updateMerchantKiosk(merchantId, kioskId, payload)
-      await dispatch(loadMerchantDetail(merchantId)).unwrap()
+      await dispatch(loadMerchantDetail(detailReloadArg(getState, merchantId))).unwrap()
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }
@@ -181,11 +191,11 @@ export const deleteMerchantKiosk = createAsyncThunk(
   'merchants/deleteKiosk',
   async (
     { merchantId, kioskId }: { merchantId: string; kioskId: string },
-    { dispatch, rejectWithValue }
+    { dispatch, getState, rejectWithValue }
   ) => {
     try {
       await merchantAPI.deleteMerchantKiosk(merchantId, kioskId)
-      await dispatch(loadMerchantDetail(merchantId)).unwrap()
+      await dispatch(loadMerchantDetail(detailReloadArg(getState, merchantId))).unwrap()
     } catch (e) {
       return rejectWithValue(getApiErrorMessage(e))
     }
