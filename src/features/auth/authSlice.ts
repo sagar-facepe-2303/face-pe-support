@@ -5,7 +5,7 @@ import * as authAPI from './authAPI'
 import type { LoginPayload } from './authAPI'
 import type { AuthState, AuthUser } from './types'
 
-const initialState: AuthState = {
+export const authInitialState: AuthState = {
   user: null,
   token: null,
   refreshToken: null,
@@ -32,7 +32,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { getState }) =>
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: authInitialState,
   reducers: {
     hydrateSession(
       state,

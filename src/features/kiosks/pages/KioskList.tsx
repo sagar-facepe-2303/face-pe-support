@@ -199,7 +199,11 @@ export function KioskList() {
         </section>
       ) : null}
 
-      {/* <form className="kiosk-list__search card-surface" onSubmit={runSearch} aria-label="Search kiosk">
+      <form
+        className="kiosk-list__search card-surface"
+        onSubmit={runSearch}
+        aria-label="Search kiosk"
+      >
         <label className="kiosk-list__search-label" htmlFor="kiosk-id-search">
           Search kiosk
         </label>
@@ -213,19 +217,27 @@ export function KioskList() {
             onChange={(e) => setKioskIdInput(e.target.value)}
             autoComplete="off"
           />
-          <button type="submit" className="btn btn--primary btn--sm" disabled={searchLoading}>
-            {searchLoading ? 'Searching…' : 'Search'}
+          <button
+            type="submit"
+            className="btn btn--primary btn--sm"
+            disabled={searchLoading}
+          >
+            {searchLoading ? "Searching…" : "Search"}
           </button>
         </div>
         <p className="kiosk-list__search-hint">
-          Uses <code>GET /kiosks/{"{kiosk_id}"}</code>, then sends a heartbeat with the loaded status values.
+          Uses <code>GET /kiosks/{"{kiosk_id}"}</code>, then sends a heartbeat
+          with the loaded status values.
         </p>
         {searchError ? (
-          <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+          <p
+            className="merchant-list__banner merchant-list__banner--error"
+            role="alert"
+          >
             {searchError}
           </p>
         ) : null}
-      </form> */}
+      </form>
 
       {detail ? (
         <section
