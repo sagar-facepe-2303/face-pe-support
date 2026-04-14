@@ -327,9 +327,7 @@ export function MerchantList() {
         }),
       ).unwrap();
       const registerKey =
-        created.merchant_email?.trim() ||
-        formEmail.trim() ||
-        created.id;
+        created.merchant_email?.trim() || formEmail.trim() || created.id;
       if (registerKey) {
         setCreatedPortalMerchantId(registerKey);
       }
@@ -354,12 +352,9 @@ export function MerchantList() {
           <p className="page-kicker">Management</p>
           <h1 className="page-title">Merchant directory</h1>
           <p className="page-desc">
-            Look up a merchant by email. If the API requires it,
-            verify with a one-time code. After a successful verification, that
-            merchant stays available here until you sign out (stored for this
-            browser tab). <strong>Super admin</strong> and{" "}
-            <strong>merchant admin</strong> can edit merchant fields and kiosks
-            inline below.
+            Look up a merchant by email and verify if needed. Verified merchants
+            stay available until you sign out. Admins can edit details and
+            kiosks below.
           </p>
         </div>
         <div className="merchant-list__actions">
@@ -410,8 +405,9 @@ export function MerchantList() {
             </button>
           </div>
           <p className="merchant-list__field-hint">
-            If kiosk registration says &quot;Merchant not found&quot;, the email in
-            the form does not match this environment—use the value above, or create the merchant here first.
+            If kiosk registration says &quot;Merchant not found&quot;, the email
+            in the form does not match this environment—use the value above, or
+            create the merchant here first.
           </p>
         </div>
       ) : null}
@@ -458,11 +454,9 @@ export function MerchantList() {
           </button>
         </div>
         <p className="merchant-list__search-hero-hint">
-          Use the merchant&apos;s primary <strong>email</strong> in{" "}
-          <code>GET /merchants/{"{email}"}</code> and{" "}
-          <code>/merchants/{"{email}"}/kiosks</code>. If the API returns 401,
-          complete email verification below—this is separate from super admin /
-          merchant admin login.
+          Use the merchant’s primary email to find their details and kiosks. If
+          required, complete a quick email verification to continue (separate
+          from admin login).
         </p>
         {searchError ? (
           <p

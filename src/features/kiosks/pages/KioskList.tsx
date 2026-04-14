@@ -155,10 +155,9 @@ export function KioskList() {
           <p className="page-kicker">Fleet</p>
           <h1 className="page-title">Kiosk inventory</h1>
           <p className="page-desc">
-            Search by kiosk id, then view device fields and the latest{" "}
-            <code>POST /kiosks/{"{id}"}/heartbeat</code> ack. Register kiosk
-            uses the merchant&apos;s primary <strong>email</strong> in{" "}
-            <code>POST /merchants/{"{email}"}/kiosks</code>.
+            Search using a Kiosk ID to view device details and its latest
+            activity status. To register a new kiosk, use the merchant’s primary
+            email.
           </p>
         </div>
         <div className="kiosk-list__actions">

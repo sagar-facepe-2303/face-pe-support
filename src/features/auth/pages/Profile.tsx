@@ -1,70 +1,77 @@
-import { useEffect, useState } from 'react'
-import { useAppSelector } from '../../../app/hooks'
-import type { Role } from '../../../core/constants/roles'
-import { fetchSupportUserById, type SupportUserResponse } from '../../supportTeam/supportAPI'
-import { isAxiosError } from 'axios'
-import '../../../layout/Layout.css'
-import './Profile.css'
+import { useEffect, useState } from "react";
+import { useAppSelector } from "../../../app/hooks";
+import type { Role } from "../../../core/constants/roles";
+import {
+  fetchSupportUserById,
+  type SupportUserResponse,
+} from "../../supportTeam/supportAPI";
+import { isAxiosError } from "axios";
+import "../../../layout/Layout.css";
+import "./Profile.css";
 
 const roleLabel: Record<string, string> = {
-  super_admin: 'Super Admin',
-  user_admin: 'User Admin',
-  merchant_admin: 'Merchant Admin',
-  merchant_support: 'Merchant Support',
-  user_support: 'User Support',
-}
+  super_admin: "Super Admin",
+  user_admin: "User Admin",
+  merchant_admin: "Merchant Admin",
+  merchant_support: "Merchant Support",
+  user_support: "User Support",
+};
 
 function formatRole(role: Role | string): string {
-  return roleLabel[role] ?? String(role).replaceAll('_', ' ')
+  return roleLabel[role] ?? String(role).replaceAll("_", " ");
 }
 
 export function Profile() {
-  const authUser = useAppSelector((s) => s.auth.user)
-  const [remote, setRemote] = useState<SupportUserResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [fetchNote, setFetchNote] = useState<string | null>(null)
+  const authUser = useAppSelector((s) => s.auth.user);
+  const [remote, setRemote] = useState<SupportUserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchNote, setFetchNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authUser?.id) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    let cancelled = false
-    ;(async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        setLoading(true)
-        setFetchNote(null)
-        const data = await fetchSupportUserById(authUser.id)
+        setLoading(true);
+        setFetchNote(null);
+        const data = await fetchSupportUserById(authUser.id);
         if (!cancelled) {
-          setRemote(data)
+          setRemote(data);
         }
       } catch (e) {
         if (!cancelled) {
-          setRemote(null)
+          setRemote(null);
           if (isAxiosError(e) && e.response?.status === 404) {
-            setFetchNote('Profile details are not available from the server. Showing session data.')
+            setFetchNote(
+              "Profile details are not available from the server. Showing session data.",
+            );
           } else {
             setFetchNote(
-              e instanceof Error ? e.message : 'Could not load profile from the server. Showing session data.'
-            )
+              e instanceof Error
+                ? e.message
+                : "Could not load profile from the server. Showing session data.",
+            );
           }
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoading(false);
       }
-    })()
+    })();
 
     return () => {
-      cancelled = true
-    }
-  }, [authUser?.id])
+      cancelled = true;
+    };
+  }, [authUser?.id]);
 
-  const displayName = remote?.name ?? authUser?.name ?? '—'
-  const displayEmail = remote?.email ?? authUser?.email ?? '—'
-  const displayRole = remote?.role ?? authUser?.role
-  const isActive = remote?.is_active
-  const createdAt = remote?.created_at
+  const displayName = remote?.name ?? authUser?.name ?? "—";
+  const displayEmail = remote?.email ?? authUser?.email ?? "—";
+  const displayRole = remote?.role ?? authUser?.role;
+  const isActive = remote?.is_active;
+  const createdAt = remote?.created_at;
 
   return (
     <div className="profile-page page-shell">
@@ -76,7 +83,10 @@ export function Profile() {
         </div>
       </header>
 
-      <section className="profile-page__card card-surface" aria-labelledby="profile-heading">
+      <section
+        className="profile-page__card card-surface"
+        aria-labelledby="profile-heading"
+      >
         <h2 id="profile-heading" className="visually-hidden">
           Profile details
         </h2>
@@ -102,12 +112,12 @@ export function Profile() {
           </div>
           <div className="profile-page__row">
             <dt>Role</dt>
-            <dd>{displayRole ? formatRole(displayRole) : '—'}</dd>
+            <dd>{displayRole ? formatRole(displayRole) : "—"}</dd>
           </div>
-          {remote && typeof isActive === 'boolean' ? (
+          {remote && typeof isActive === "boolean" ? (
             <div className="profile-page__row">
               <dt>Status</dt>
-              <dd>{isActive ? 'Active' : 'Inactive'}</dd>
+              <dd>{isActive ? "Active" : "Inactive"}</dd>
             </div>
           ) : null}
           {createdAt ? (
@@ -119,11 +129,11 @@ export function Profile() {
           <div className="profile-page__row">
             <dt>User ID</dt>
             <dd>
-              <code className="profile-page__code">{authUser?.id ?? '—'}</code>
+              <code className="profile-page__code">{authUser?.id ?? "—"}</code>
             </dd>
           </div>
         </dl>
       </section>
     </div>
-  )
+  );
 }
