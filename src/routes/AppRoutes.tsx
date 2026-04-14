@@ -62,7 +62,15 @@ export function AppRoutes() {
             </Route>
             <Route
               element={
-                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.USER_ADMIN, ROLES.MERCHANT_ADMIN]} />
+                <ProtectedRoute
+                  allowedRoles={[
+                    ROLES.SUPER_ADMIN,
+                    ROLES.USER_ADMIN,
+                    ROLES.MERCHANT_ADMIN,
+                    ROLES.USER_SUPPORT,
+                    ROLES.MERCHANT_SUPPORT,
+                  ]}
+                />
               }
             >
               <Route path={ROUTES.AUDIT_LOGS} element={<AuditLogs />} />
