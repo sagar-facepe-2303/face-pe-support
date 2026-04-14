@@ -1,6 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { isAxiosError } from 'axios'
+import { getApiErrorMessage } from '../../core/api/parseApiError'
 import * as userAPI from './userAPI'
 import type { PlatformUserDetail, PlatformUserRow, UserTransactionRow } from './userAPI'
+
+export interface UserDetailRejected {
+  message: string
+  httpStatus?: number
+}
 
 interface UserState {
   list: PlatformUserRow[]
@@ -9,6 +16,7 @@ interface UserState {
   loadingList: boolean
   loadingDetail: boolean
   error: string | null
+  detailLoadHttpStatus: number | null
 }
 
 const initialState: UserState = {
@@ -18,6 +26,7 @@ const initialState: UserState = {
   loadingList: false,
   loadingDetail: false,
   error: null,
+  detailLoadHttpStatus: null,
 }
 
 export const loadUsers = createAsyncThunk('users/loadAll', async (_, { rejectWithValue }) => {
@@ -30,11 +39,16 @@ export const loadUsers = createAsyncThunk('users/loadAll', async (_, { rejectWit
 
 export const loadUserDetail = createAsyncThunk(
   'users/loadDetail',
-  async (id: string, { rejectWithValue }) => {
+  async (arg: string | { id: string; otpToken?: string | null }, { rejectWithValue }) => {
+    const id = typeof arg === 'string' ? arg : arg.id
+    const otpToken = typeof arg === 'string' ? undefined : arg.otpToken
     try {
-      return await userAPI.fetchUserById(id)
+      return await userAPI.fetchUserProfile(id, otpToken)
     } catch (e) {
-      return rejectWithValue(e instanceof Error ? e.message : 'Failed')
+      return rejectWithValue({
+        message: getApiErrorMessage(e),
+        httpStatus: isAxiosError(e) ? e.response?.status : undefined,
+      } satisfies UserDetailRejected)
     }
   }
 )
@@ -46,6 +60,7 @@ const userSlice = createSlice({
     clearUserDetail(state) {
       state.current = null
       state.transactions = []
+      state.detailLoadHttpStatus = null
     },
   },
   extraReducers: (builder) => {
@@ -65,15 +80,26 @@ const userSlice = createSlice({
       .addCase(loadUserDetail.pending, (state) => {
         state.loadingDetail = true
         state.error = null
+        state.detailLoadHttpStatus = null
       })
       .addCase(loadUserDetail.fulfilled, (state, action) => {
         state.loadingDetail = false
         state.current = action.payload.user
         state.transactions = action.payload.transactions
+        state.detailLoadHttpStatus = null
       })
       .addCase(loadUserDetail.rejected, (state, action) => {
         state.loadingDetail = false
-        state.error = (action.payload as string) ?? 'Error'
+        state.current = null
+        state.transactions = []
+        const p = action.payload as UserDetailRejected | string | undefined
+        if (p && typeof p === 'object' && 'message' in p) {
+          state.error = p.message
+          state.detailLoadHttpStatus = typeof p.httpStatus === 'number' ? p.httpStatus : null
+        } else {
+          state.error = typeof p === 'string' ? p : 'Error'
+          state.detailLoadHttpStatus = null
+        }
       })
   },
 })

@@ -1,3 +1,5 @@
+import api from '../../core/api/axios'
+
 export interface PlatformUserRow {
   id: string
   name: string
@@ -26,7 +28,116 @@ export interface UserTransactionRow {
   status: 'SUCCESS' | 'FAILED'
 }
 
+/** Shape from `GET /users/{user_phone}`. */
+export interface UserResponse {
+  id: string
+  user_name?: string | null
+  user_email?: string | null
+  user_phone?: string | null
+  status?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+/** Encode mobile number for `/users/{segment}` (preserves E.164 `+` via percent-encoding). */
+export function userPhonePathSegment(userPhone: string): string {
+  return encodeURIComponent(userPhone.trim())
+}
+
+export type OtpPurpose = 'read_user' | 'update_user' | 'delete_user'
+
+export interface SendOtpRequest {
+  purpose: OtpPurpose
+  target_user_phone?: string
+  target_user_id?: string
+}
+
+export interface SendOtpResponse {
+  session_id: string
+  expires_at?: string
+  /** Alternate field name from some API builds */
+  expiry?: string
+  delivery_method?: string
+  masked_recipient?: string
+}
+
+export interface VerifyOtpRequest {
+  session_id: string
+  code: string
+}
+
+export interface VerifyOtpResponse {
+  token?: string
+  otp_token?: string
+  access_token?: string
+  token_type?: string
+  expires_at?: string
+  expiry?: string
+  target_type?: string
+  target_id?: string
+  detail?: unknown
+}
+
+export interface UpdateUserRequest {
+  user_name?: string
+  user_email?: string
+  user_phone?: string
+}
+
+/** `POST /test/seed-user` — create an end-customer record (dev/test helper; Bearer auth). */
+export interface SeedCustomerUserRequest {
+  user_id: string
+  user_name: string
+  user_email: string
+  user_phone: string
+}
+
+export interface SeedCustomerUserResponse {
+  id: string
+  user_id: string
+  user_name: string
+  user_email: string
+  user_phone: string
+  created_at: string
+  updated_at: string
+}
+
+export async function seedCustomerUser(payload: SeedCustomerUserRequest): Promise<SeedCustomerUserResponse> {
+  const response = await api.post<SeedCustomerUserResponse>('/test/seed-user', payload)
+  return response.data
+}
+
+function mapUserStatus(s: string | null | undefined): PlatformUserDetail['status'] {
+  const lower = (s ?? '').toLowerCase()
+  if (lower.includes('suspend')) return 'SUSPENDED'
+  if (lower.includes('pend')) return 'PENDING'
+  return 'ACTIVE'
+}
+
+export function mapUserResponseToDetail(r: UserResponse): PlatformUserDetail {
+  const name = r.user_name?.trim() || '—'
+  const email = r.user_email?.trim() || '—'
+  const phone = r.user_phone?.trim() || '—'
+  const createdAt = r.created_at ?? r.updated_at ?? new Date().toISOString()
+  return {
+    id: r.id,
+    name,
+    email,
+    status: mapUserStatus(r.status),
+    createdAt,
+    userCode: `FP-${r.id.replace(/-/g, '').slice(0, 8)}`,
+    phone,
+    lastLogin: '—',
+    totalSpent: 0,
+    spentTrend: '—',
+    failedTransactions: 0,
+    totalTransactions: 0,
+    supportRequestsOpen: 0,
+  }
+}
+
 export async function fetchUsers(): Promise<PlatformUserRow[]> {
+  // User list is not wired to `GET /users` in the current contract; grid uses local data.
   await delay(240)
   return [
     {
@@ -53,43 +164,93 @@ export async function fetchUsers(): Promise<PlatformUserRow[]> {
   ]
 }
 
-export async function fetchUserById(id: string): Promise<{
-  user: PlatformUserDetail
-  transactions: UserTransactionRow[]
-}> {
-  await delay(230)
-  const user: PlatformUserDetail = {
-    id,
-    name: 'Marcus Holloway',
-    email: 'marcus.h@email.com',
-    status: 'ACTIVE',
-    createdAt: '2023-08-02',
-    userCode: 'FP-8829-01',
-    phone: '+1 (415) 555-0142',
-    lastLogin: 'Today, 09:14',
-    totalSpent: 14290.5,
-    spentTrend: '+12%',
-    failedTransactions: 3,
-    totalTransactions: 128,
-    supportRequestsOpen: 1,
-  }
-  const transactions: UserTransactionRow[] = [
-    {
-      reference: 'TX-88291',
-      merchant: 'Skyline Cafe',
-      date: '2024-03-28',
-      amount: 24.5,
-      status: 'SUCCESS',
-    },
-    {
-      reference: 'TX-88288',
-      merchant: 'Harbor Air',
-      date: '2024-03-27',
-      amount: 210,
-      status: 'FAILED',
-    },
+/**
+ * `GET /users/{user_phone}` — requires `Authorization` and `X-OTP-Token` with `read_user` scope.
+ */
+export async function fetchUserProfile(
+  userPhone: string,
+  otpToken?: string | null
+): Promise<{ user: PlatformUserDetail; transactions: UserTransactionRow[] }> {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.get<UserResponse>(`/users/${seg}`, {
+    ...(otpToken ? { headers: { 'X-OTP-Token': otpToken } } : {}),
+  })
+  const user = mapUserResponseToDetail(response.data)
+  return { user, transactions: [] }
+}
+
+/** @deprecated Use `fetchUserProfile` */
+export async function getUserById(userPhone: string, otpToken: string): Promise<UserResponse> {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.get<UserResponse>(`/users/${seg}`, {
+    headers: { 'X-OTP-Token': otpToken },
+  })
+  return response.data
+}
+
+/** `PUT /users/{user_phone}` — OTP scope `update_user`. */
+export async function updateUserById(
+  userPhone: string,
+  payload: UpdateUserRequest,
+  otpToken: string
+): Promise<UserResponse> {
+  const seg = userPhonePathSegment(userPhone)
+  const response = await api.put<UserResponse>(`/users/${seg}`, payload, {
+    headers: { 'X-OTP-Token': otpToken },
+  })
+  return response.data
+}
+
+/** `DELETE /users/{user_phone}` — OTP scope `delete_user`; API returns 204. */
+export async function deleteUserById(userPhone: string, otpToken: string): Promise<void> {
+  const seg = userPhonePathSegment(userPhone)
+  await api.delete(`/users/${seg}`, {
+    headers: { 'X-OTP-Token': otpToken },
+  })
+}
+
+export async function sendOtp(payload: SendOtpRequest): Promise<SendOtpResponse> {
+  const response = await api.post<SendOtpResponse>('/otp/send', payload)
+  return response.data
+}
+
+/** `POST /otp/send` for user flows — requires `target_user_phone` for read/update/delete OTP. */
+export async function sendUserOtp(purpose: OtpPurpose, targetUserPhone: string): Promise<SendOtpResponse> {
+  return sendOtp({ purpose, target_user_phone: targetUserPhone.trim() })
+}
+
+export async function verifyOtp(payload: VerifyOtpRequest): Promise<VerifyOtpResponse> {
+  const response = await api.post<VerifyOtpResponse>('/otp/verify', payload)
+  return response.data
+}
+
+/** Pull scoped JWT/string for `X-OTP-Token` from various API response shapes. */
+export function extractOtpScopeToken(d: VerifyOtpResponse): string {
+  const raw = d as Record<string, unknown>
+  const nested =
+    raw.detail && typeof raw.detail === 'object' && raw.detail !== null
+      ? (raw.detail as Record<string, unknown>)
+      : null
+  const candidates: unknown[] = [
+    d.token,
+    d.otp_token,
+    d.access_token,
+    nested?.token,
+    nested?.otp_token,
+    nested?.access_token,
   ]
-  return { user, transactions }
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) {
+      return c.trim()
+    }
+  }
+  return ''
+}
+
+/** Returns the scoped token for `X-OTP-Token` after `POST /otp/verify`. */
+export async function verifyUserOtpAndGetToken(sessionId: string, code: string): Promise<string> {
+  const d = await verifyOtp({ session_id: sessionId, code })
+  return extractOtpScopeToken(d)
 }
 
 function delay(ms: number): Promise<void> {

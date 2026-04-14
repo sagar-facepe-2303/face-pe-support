@@ -1,5 +1,6 @@
+import api from '../../core/api/axios'
+import type { Role } from '../../core/constants/roles'
 import type { AuthUser } from './types'
-import { ROLES } from '../../core/constants/roles'
 
 export interface LoginPayload {
   email: string
@@ -7,52 +8,85 @@ export interface LoginPayload {
   rememberDevice?: boolean
 }
 
-export interface RegisterPayload {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  accountType: 'merchant' | 'kiosk_operator'
-}
-
-/** Mock JWT — not a real token */
-function mockToken(email: string): string {
-  return `mock.${btoa(email)}.${Date.now()}`
-}
-
-/**
- * Mock login — does not perform network I/O.
- */
-export async function loginRequest(payload: LoginPayload): Promise<{ user: AuthUser; token: string }> {
-  await delay(400)
-  if (!payload.email || !payload.password) {
-    throw new Error('Email and password are required')
+interface LoginResponseShape {
+  access_token: string
+  refresh_token: string
+  user?: {
+    id?: string
+    email: string
+    name?: string
+    role: Role
+    is_active?: boolean
+    merchant_id?: string
+    merchant_name?: string
   }
-  const user: AuthUser = {
-    id: 'usr-admin-1',
+  id?: string
+  email?: string
+  name?: string
+  role?: Role
+  is_active?: boolean
+  merchant_id?: string
+  merchant_name?: string
+}
+
+function normalizeUser(raw: LoginResponseShape['user'], root?: LoginResponseShape): AuthUser {
+  if (!raw) {
+    throw new Error('Login response missing user profile')
+  }
+  const merchantId = raw.merchant_id ?? root?.merchant_id
+  const merchantName = raw.merchant_name ?? root?.merchant_name
+  return {
+    id: raw.id ?? raw.email,
+    email: raw.email,
+    name: raw.name ?? raw.email.split('@')[0],
+    role: raw.role,
+    ...(merchantId ? { merchantId } : {}),
+    ...(merchantName ? { merchantName } : {}),
+  }
+}
+
+export async function loginRequest(payload: LoginPayload): Promise<{
+  user: AuthUser
+  token: string
+  refreshToken: string
+}> {
+  const response = await api.post<LoginResponseShape>('/auth/login', {
     email: payload.email,
-    name: 'Admin User',
-    role: ROLES.SUPER_ADMIN,
-    avatarUrl: undefined,
+    password: payload.password,
+  })
+  const body = response.data
+  const userPayload =
+    body.user ??
+    (body.email && body.role
+      ? {
+          id: body.id ?? body.email,
+          email: body.email,
+          name: body.name,
+          role: body.role,
+          is_active: body.is_active,
+        }
+      : undefined)
+
+  return {
+    user: normalizeUser(userPayload, body),
+    token: body.access_token,
+    refreshToken: body.refresh_token,
   }
-  return { user, token: mockToken(payload.email) }
 }
 
-export async function registerRequest(payload: RegisterPayload): Promise<{ user: AuthUser; token: string }> {
-  await delay(500)
-  const user: AuthUser = {
-    id: 'usr-new-1',
-    email: payload.email,
-    name: `${payload.firstName} ${payload.lastName}`.trim(),
-    role: payload.accountType === 'kiosk_operator' ? ROLES.SUPPORT : ROLES.ADMIN,
+export async function refreshRequest(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
+  const response = await api.post<{ access_token: string; refresh_token: string }>('/auth/refresh', {
+    refresh_token: refreshToken,
+  })
+  return {
+    token: response.data.access_token,
+    refreshToken: response.data.refresh_token,
   }
-  return { user, token: mockToken(payload.email) }
 }
 
-export async function logoutRequest(): Promise<void> {
-  await delay(150)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+export async function logoutRequest(refreshToken: string | null): Promise<void> {
+  if (!refreshToken) return
+  await api.post('/auth/logout', {
+    refresh_token: refreshToken,
+  })
 }

@@ -72,6 +72,42 @@ export function IconUsers() {
   )
 }
 
+export function IconProfile() {
+  return (
+    <svg {...svgProps}>
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
+      <path
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        d="M5 20v-1a7 7 0 0114 0v1"
+      />
+    </svg>
+  )
+}
+
+/** User with plus — Create Admin (super admin only) */
+export function IconCreateAdmin() {
+  return (
+    <svg {...svgProps}>
+      <circle cx="9" cy="7" r="3" stroke="currentColor" strokeWidth="2" />
+      <path
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        d="M3 20v-1a5 5 0 015-5h1"
+      />
+      <path
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19 8v6M16 11h6"
+      />
+    </svg>
+  )
+}
+
 export function IconHeadset() {
   return (
     <svg {...svgProps}>

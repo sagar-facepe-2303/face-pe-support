@@ -1,0 +1,65 @@
+.create-support-admin__card {
+  max-width: 42rem;
+}
+
+.create-support-admin__title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.create-support-admin__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.create-support-admin__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.create-support-admin__field > span:first-of-type {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.create-support-admin__hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.create-support-admin__field input,
+.create-support-admin__field select {
+  border: none;
+  background: var(--surface-container-low);
+  color: var(--on-surface);
+  border-radius: var(--radius-md);
+  min-height: 2.7rem;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+}
+
+.create-support-admin__field input:focus,
+.create-support-admin__field select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.create-support-admin__error {
+  margin: 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.create-support-admin__success {
+  margin: 0;
+  color: var(--success);
+  font-size: 0.9rem;
+}
+
+.create-support-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+

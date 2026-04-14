@@ -1,3 +1,11 @@
+.merchant-details__otp-intro {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 40rem;
+}
+
 .merchant-details__crumb {
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -6,9 +14,28 @@
   margin-bottom: 0.75rem;
 }
 
+.merchant-details__crumb a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.merchant-details__crumb a:hover {
+  text-decoration: underline;
+}
+
 .merchant-details__crumb span {
   color: var(--on-surface);
   font-weight: 600;
+}
+
+.merchant-details__banner {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: 0.875rem;
 }
 
 .merchant-details__sub {
@@ -290,6 +317,114 @@
   font-size: 0.75rem;
   color: var(--text-secondary);
   padding-bottom: 2rem;
+}
+
+.merchant-details__kiosk-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.merchant-details__kiosk-link:hover {
+  text-decoration: underline;
+}
+
+.merchant-details__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.merchant-details__mini {
+  border: none;
+  background: var(--surface-container-low);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--primary);
+}
+
+.merchant-details__mini--danger {
+  color: var(--error);
+}
+
+.merchant-details__modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.merchant-details__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.merchant-details__modal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 26rem);
+  padding: 1.25rem;
+}
+
+.merchant-details__modal-title {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+}
+
+.merchant-details__modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.merchant-details__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: var(--label-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.merchant-details__label input {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+}
+
+.merchant-details__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.merchant-details__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.merchant-details__err {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--error);
 }
 
 .visually-hidden {

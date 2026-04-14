@@ -173,6 +173,23 @@
   border-left: 1px solid var(--border);
 }
 
+.app-header__profile-link {
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-md);
+  padding-right: 0.25rem;
+  margin-right: -0.25rem;
+}
+
+.app-header__profile-link:hover {
+  background: var(--surface-container-low);
+}
+
+.app-header__profile-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .app-header__avatar {
   width: 2.5rem;
   height: 2.5rem;
