@@ -48,6 +48,18 @@ export function UserList() {
   const [seedError, setSeedError] = useState<string | null>(null);
   const [seedSuccess, setSeedSuccess] =
     useState<userAPI.SeedCustomerUserResponse | null>(null);
+  const [mutationPurpose, setMutationPurpose] = useState<
+    "update_user" | "delete_user" | null
+  >(null);
+  const [mutationSessionId, setMutationSessionId] = useState<string | null>(null);
+  const [mutationCode, setMutationCode] = useState("");
+  const [mutationSending, setMutationSending] = useState(false);
+  const [mutationSubmitting, setMutationSubmitting] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationSuccess, setMutationSuccess] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
   async function loadProfile(otpTokenOverride?: string | null) {
     const phone = userPhoneInput.trim();
@@ -201,6 +213,123 @@ export function UserList() {
     }
   }
 
+  async function startMutationOtp(purpose: "update_user" | "delete_user") {
+    const phone = profileLookupKey ?? userPhoneInput.trim();
+    if (!phone) {
+      setMutationError("Search and load a profile first.");
+      return;
+    }
+    setMutationSending(true);
+    setMutationError(null);
+    setMutationSuccess(null);
+    try {
+      const r = await userAPI.sendUserOtp(purpose, phone);
+      setMutationPurpose(purpose);
+      setMutationSessionId(r.session_id);
+      setMutationCode("");
+    } catch (err) {
+      setMutationError(getApiErrorMessage(err));
+    } finally {
+      setMutationSending(false);
+    }
+  }
+
+  async function handleUpdateUser() {
+    if (!mutationSessionId || mutationPurpose !== "update_user") {
+      setMutationError("Send an update OTP code first.");
+      return;
+    }
+    const lookupPhone = profileLookupKey ?? userPhoneInput.trim();
+    if (!lookupPhone) {
+      setMutationError("Missing user phone for update.");
+      return;
+    }
+    const code = mutationCode.trim();
+    if (!code) {
+      setMutationError("Enter the OTP code for update.");
+      return;
+    }
+    const payload: userAPI.UpdateUserRequest = {};
+    if (editName.trim() && editName.trim() !== (result?.name ?? "")) {
+      payload.user_name = editName.trim();
+    }
+    if (editEmail.trim() && editEmail.trim() !== (result?.email ?? "")) {
+      payload.user_email = editEmail.trim();
+    }
+    if (editPhone.trim() && editPhone.trim() !== (result?.phone ?? "")) {
+      payload.user_phone = editPhone.trim();
+    }
+    if (!payload.user_name && !payload.user_email && !payload.user_phone) {
+      setMutationError("Change at least one field before updating.");
+      return;
+    }
+
+    setMutationSubmitting(true);
+    setMutationError(null);
+    try {
+      const otpToken = await userAPI.verifyUserOtpAndGetToken(mutationSessionId, code);
+      if (!otpToken) {
+        setMutationError("OTP verification did not return a token.");
+        return;
+      }
+      const updated = await userAPI.updateUserById(lookupPhone, payload, otpToken);
+      const mapped = userAPI.mapUserResponseToDetail(updated);
+      setResult(mapped);
+      const nextPhone = mapped.phone !== "—" ? mapped.phone : lookupPhone;
+      setProfileLookupKey(nextPhone);
+      setUserPhoneInput(nextPhone);
+      setReadOtpToken(null);
+      setReadOtpPhone(null);
+      setMutationSessionId(null);
+      setMutationCode("");
+      setMutationPurpose(null);
+      setMutationSuccess("User profile updated successfully.");
+    } catch (err) {
+      setMutationError(getApiErrorMessage(err));
+    } finally {
+      setMutationSubmitting(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!mutationSessionId || mutationPurpose !== "delete_user") {
+      setMutationError("Send a delete OTP code first.");
+      return;
+    }
+    const lookupPhone = profileLookupKey ?? userPhoneInput.trim();
+    if (!lookupPhone) {
+      setMutationError("Missing user phone for delete.");
+      return;
+    }
+    const code = mutationCode.trim();
+    if (!code) {
+      setMutationError("Enter the OTP code for delete.");
+      return;
+    }
+    setMutationSubmitting(true);
+    setMutationError(null);
+    try {
+      const otpToken = await userAPI.verifyUserOtpAndGetToken(mutationSessionId, code);
+      if (!otpToken) {
+        setMutationError("OTP verification did not return a token.");
+        return;
+      }
+      await userAPI.deleteUserById(lookupPhone, otpToken);
+      setResult(null);
+      setProfileLookupKey(null);
+      setReadOtpToken(null);
+      setReadOtpPhone(null);
+      setMutationSessionId(null);
+      setMutationCode("");
+      setMutationPurpose(null);
+      setMutationSuccess("User deleted successfully.");
+    } catch (err) {
+      setMutationError(getApiErrorMessage(err));
+    } finally {
+      setMutationSubmitting(false);
+    }
+  }
+
   const d = result;
 
   return (
@@ -280,6 +409,11 @@ export function UserList() {
               setOtpHint(false);
               setSearchError(null);
               setResult(null);
+              setMutationPurpose(null);
+              setMutationSessionId(null);
+              setMutationCode("");
+              setMutationError(null);
+              setMutationSuccess(null);
             }}
             autoComplete="off"
           />
@@ -373,6 +507,11 @@ export function UserList() {
           </div>
         ) : null}
       </form>
+      {mutationSuccess ? (
+        <p className="merchant-list__banner merchant-list__banner--success" role="status">
+          {mutationSuccess}
+        </p>
+      ) : null}
 
       {d ? (
         <section
@@ -425,6 +564,108 @@ export function UserList() {
               </time>
             </dd>
           </dl>
+          {canCreate ? (
+            <div className="user-list__mutations">
+              <p className="user-list__search-hint" style={{ marginTop: 0 }}>
+                Update/Delete require OTP validation with scope{" "}
+                <code>update_user</code> or <code>delete_user</code>.
+              </p>
+              <div className="user-list__search-row">
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  disabled={mutationSending || mutationSubmitting}
+                  onClick={() => {
+                    setEditName(d.name === "—" ? "" : d.name);
+                    setEditEmail(d.email === "—" ? "" : d.email);
+                    setEditPhone(d.phone === "—" ? "" : d.phone);
+                    void startMutationOtp("update_user");
+                  }}
+                >
+                  {mutationSending && mutationPurpose === "update_user"
+                    ? "Sending update OTP…"
+                    : "Send update OTP"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  disabled={mutationSending || mutationSubmitting}
+                  onClick={() => void startMutationOtp("delete_user")}
+                >
+                  {mutationSending && mutationPurpose === "delete_user"
+                    ? "Sending delete OTP…"
+                    : "Send delete OTP"}
+                </button>
+              </div>
+
+              {mutationPurpose === "update_user" ? (
+                <div className="user-list__mutate-card">
+                  <label className="merchant-list__field">
+                    <span className="merchant-list__field-label">user_name</span>
+                    <input
+                      className="merchant-list__input"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                  </label>
+                  <label className="merchant-list__field">
+                    <span className="merchant-list__field-label">user_email</span>
+                    <input
+                      className="merchant-list__input"
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                  </label>
+                  <label className="merchant-list__field">
+                    <span className="merchant-list__field-label">user_phone</span>
+                    <input
+                      className="merchant-list__input"
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                  </label>
+                </div>
+              ) : null}
+
+              {mutationPurpose ? (
+                <div className="user-list__search-row">
+                  <input
+                    className="merchant-list__input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="OTP code"
+                    value={mutationCode}
+                    onChange={(e) => setMutationCode(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--sm"
+                    disabled={mutationSubmitting}
+                    onClick={() =>
+                      mutationPurpose === "update_user"
+                        ? void handleUpdateUser()
+                        : void handleDeleteUser()
+                    }
+                  >
+                    {mutationSubmitting
+                      ? "Submitting…"
+                      : mutationPurpose === "update_user"
+                      ? "Verify & update"
+                      : "Verify & delete"}
+                  </button>
+                </div>
+              ) : null}
+
+              {mutationError ? (
+                <p className="merchant-list__banner merchant-list__banner--error" role="alert">
+                  {mutationError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
 
