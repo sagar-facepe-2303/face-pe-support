@@ -1,11 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { createMerchantKiosk } from "../../merchants/merchantSlice";
 import * as kioskAPI from "../kioskAPI";
-import type { KioskDetail, KioskHeartbeatResponse } from "../kioskAPI";
 import { buildCreateKioskPayload } from "../../merchants/merchantAPI";
-import { ROUTES } from "../../../core/config/routes";
 import { ROLES, canManageKiosks } from "../../../core/constants/roles";
 import { formatDisplayDate } from "../../../core/utils/helpers";
 import { getApiErrorMessage } from "../../../core/api/parseApiError";
@@ -17,7 +14,6 @@ const SCOPE_STORAGE_KEY = "fp_kiosk_scope_merchant_id";
 
 export function KioskList() {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user);
   const canMutate = canManageKiosks(user?.role);
   const isMerchantAdmin = user?.role === ROLES.MERCHANT_ADMIN;
@@ -30,10 +26,6 @@ export function KioskList() {
     }
   });
 
-  const scopedListId = isMerchantAdmin
-    ? user?.merchantId?.trim() || scopeMerchantIdInput.trim() || undefined
-    : undefined;
-
   useEffect(() => {
     try {
       sessionStorage.setItem(SCOPE_STORAGE_KEY, scopeMerchantIdInput);
@@ -42,14 +34,15 @@ export function KioskList() {
     }
   }, [scopeMerchantIdInput]);
 
-  const [kioskIdInput, setKioskIdInput] = useState("");
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [detail, setDetail] = useState<KioskDetail | null>(null);
-  const [heartbeat, setHeartbeat] = useState<KioskHeartbeatResponse | null>(
-    null,
+  const [hbKioskId, setHbKioskId] = useState("");
+  const [hbIsOnline, setHbIsOnline] = useState(true);
+  const [hbFaceStatus, setHbFaceStatus] = useState(true);
+  const [hbCameraStatus, setHbCameraStatus] = useState(true);
+  const [hbSubmitting, setHbSubmitting] = useState(false);
+  const [hbError, setHbError] = useState<string | null>(null);
+  const [heartbeat, setHeartbeat] = useState<kioskAPI.KioskHeartbeatResponse | null>(
+    null
   );
-  const [heartbeatError, setHeartbeatError] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [addSubmitting, setAddSubmitting] = useState(false);
@@ -70,41 +63,27 @@ export function KioskList() {
     setKioskMerchantId(initial);
   }, [addOpen, user?.merchantId, scopeMerchantIdInput]);
 
-  async function runSearch(e?: FormEvent) {
-    e?.preventDefault();
-    const id = kioskIdInput.trim();
+  async function handleSendHeartbeat(e: FormEvent) {
+    e.preventDefault();
+    const id = hbKioskId.trim();
     if (!id) {
-      setSearchError("Enter a kiosk id (UUID).");
+      setHbError("Enter a kiosk id.");
       return;
     }
-    if (isMerchantAdmin && !scopedListId) {
-      setSearchError(
-        "Set your merchant email below so kiosk lookup can fall back if needed.",
-      );
-      return;
-    }
-    setSearchError(null);
-    setHeartbeatError(null);
+    setHbError(null);
     setHeartbeat(null);
-    setDetail(null);
-    setSearchLoading(true);
+    setHbSubmitting(true);
     try {
-      const k = await kioskAPI.fetchKioskById(id, scopedListId ?? null);
-      setDetail(k);
-      try {
-        const hb = await kioskAPI.sendKioskHeartbeat(id, {
-          is_online: k.isOnline,
-          face_status: k.faceStatus,
-          camera_status: k.cameraStatusLabel || k.cameraStatus,
-        });
-        setHeartbeat(hb);
-      } catch (he) {
-        setHeartbeatError(getApiErrorMessage(he));
-      }
+      const hb = await kioskAPI.sendKioskHeartbeat(id, {
+        is_online: hbIsOnline,
+        face_status: hbFaceStatus,
+        camera_status: hbCameraStatus,
+      });
+      setHeartbeat(hb);
     } catch (err) {
-      setSearchError(getApiErrorMessage(err));
+      setHbError(getApiErrorMessage(err));
     } finally {
-      setSearchLoading(false);
+      setHbSubmitting(false);
     }
   }
 
@@ -145,9 +124,6 @@ export function KioskList() {
     }
   }
 
-  const hbTime = heartbeat?.server_timestamp ?? heartbeat?.timestamp;
-  const hbAck = heartbeat?.acknowledged ?? heartbeat?.ack;
-
   return (
     <div className="kiosk-list page-shell">
       <header className="page-header">
@@ -155,9 +131,9 @@ export function KioskList() {
           <p className="page-kicker">Fleet</p>
           <h1 className="page-title">Kiosk inventory</h1>
           <p className="page-desc">
-            Search using a Kiosk ID to view device details and its latest
-            activity status. To register a new kiosk, use the merchant’s primary
-            email.
+            Send direct heartbeat payloads using{" "}
+            <code>POST /kiosks/{"{kiosk_id}"}/heartbeat</code>. To register a new kiosk,
+            use the merchant’s primary email.
           </p>
         </div>
         <div className="kiosk-list__actions">
@@ -201,124 +177,89 @@ export function KioskList() {
 
       <form
         className="kiosk-list__search card-surface"
-        onSubmit={runSearch}
-        aria-label="Search kiosk"
+        onSubmit={handleSendHeartbeat}
+        aria-label="Send kiosk heartbeat"
       >
-        <label className="kiosk-list__search-label" htmlFor="kiosk-id-search">
-          Search kiosk
+        <label className="kiosk-list__search-label" htmlFor="hb-kiosk-id">
+          Send heartbeat
         </label>
-        <div className="kiosk-list__search-row">
+        <div className="kiosk-list__field">
           <input
-            id="kiosk-id-search"
+            id="hb-kiosk-id"
             className="kiosk-list__search-input"
-            type="search"
+            type="text"
             placeholder="Kiosk UUID…"
-            value={kioskIdInput}
-            onChange={(e) => setKioskIdInput(e.target.value)}
+            value={hbKioskId}
+            onChange={(e) => setHbKioskId(e.target.value)}
             autoComplete="off"
           />
-          <button
-            type="submit"
-            className="btn btn--primary btn--sm"
-            disabled={searchLoading}
-          >
-            {searchLoading ? "Searching…" : "Search"}
+        </div>
+        <div className="kiosk-list__search-row" style={{ marginTop: "0.75rem" }}>
+          <label className="kiosk-list__check">
+            <input
+              type="checkbox"
+              checked={hbIsOnline}
+              onChange={(e) => setHbIsOnline(e.target.checked)}
+            />
+            is_online
+          </label>
+          <label className="kiosk-list__check">
+            <input
+              type="checkbox"
+              checked={hbFaceStatus}
+              onChange={(e) => setHbFaceStatus(e.target.checked)}
+            />
+            face_status
+          </label>
+          <label className="kiosk-list__check">
+            <input
+              type="checkbox"
+              checked={hbCameraStatus}
+              onChange={(e) => setHbCameraStatus(e.target.checked)}
+            />
+            camera_status
+          </label>
+          <button type="submit" className="btn btn--primary btn--sm" disabled={hbSubmitting}>
+            {hbSubmitting ? "Sending…" : "Send heartbeat"}
           </button>
         </div>
         <p className="kiosk-list__search-hint">
-          Uses <code>GET /kiosks/{"{kiosk_id}"}</code>, then sends a heartbeat
-          with the loaded status values.
+          Request body: <code>is_online</code>, <code>face_status</code>, <code>camera_status</code>.
         </p>
-        {searchError ? (
+        {hbError ? (
           <p
             className="merchant-list__banner merchant-list__banner--error"
             role="alert"
           >
-            {searchError}
+            {hbError}
           </p>
         ) : null}
-      </form>
-
-      {detail ? (
-        <section
-          className="kiosk-list__result card-surface"
-          aria-labelledby="kiosk-result-title"
-        >
-          <header className="kiosk-list__result-head">
-            <h2 id="kiosk-result-title" className="kiosk-list__result-title">
-              {detail.title}
-            </h2>
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() =>
-                navigate(ROUTES.KIOSK_DETAIL.replace(":kioskId", detail.id))
-              }
-            >
-              Open full page
-            </button>
-          </header>
-          <dl className="kiosk-list__result-dl">
-            <dt>Kiosk id</dt>
-            <dd>
-              <code>{detail.id}</code>
-            </dd>
-            <dt>Merchant</dt>
-            <dd>
-              <code>{detail.merchantId}</code>
-            </dd>
-            <dt>Serial</dt>
-            <dd>{detail.serialId}</dd>
-            <dt>Network</dt>
-            <dd>
-              <span
-                className={`kiosk-list__pill kiosk-list__pill--${detail.networkStatus.toLowerCase()}`}
-              >
-                {detail.networkStatus}
-              </span>
-            </dd>
-            <dt>Face</dt>
-            <dd>{detail.faceStatus}</dd>
-            <dt>Camera</dt>
-            <dd>{detail.cameraStatusLabel}</dd>
-            <dt>Health</dt>
-            <dd>
-              {detail.healthPct}% · {detail.healthLabel}
-            </dd>
-            <dt>Last sync</dt>
-            <dd>{detail.lastSync}</dd>
-          </dl>
-
+        {heartbeat ? (
           <div className="kiosk-list__hb card-surface">
             <h3 className="kiosk-list__hb-title">Heartbeat response</h3>
-            <p className="kiosk-list__hb-sub">
-              <code>POST /kiosks/{"{kiosk_id}"}/heartbeat</code> (no auth) —
-              body mirrors current device fields.
-            </p>
-            {heartbeatError ? (
-              <p
-                className="merchant-list__banner merchant-list__banner--error"
-                role="alert"
-              >
-                {heartbeatError}
-              </p>
-            ) : heartbeat ? (
-              <dl className="kiosk-list__result-dl">
-                <dt>Acknowledged</dt>
-                <dd>{hbAck === undefined ? "—" : String(hbAck)}</dd>
-                {hbTime ? (
-                  <>
-                    <dt>Server time</dt>
-                    <dd>
-                      <time dateTime={hbTime}>{formatDisplayDate(hbTime)}</time>
-                    </dd>
-                  </>
-                ) : null}
-              </dl>
-            ) : null}
+            <dl className="kiosk-list__result-dl">
+              <dt>Acknowledged</dt>
+              <dd>
+                {String(
+                  heartbeat.acknowledged ?? heartbeat.ack ?? "—"
+                )}
+              </dd>
+              {(heartbeat.server_timestamp ?? heartbeat.timestamp) ? (
+                <>
+                  <dt>Server time</dt>
+                  <dd>
+                    <time dateTime={heartbeat.server_timestamp ?? heartbeat.timestamp}>
+                      {formatDisplayDate(
+                        heartbeat.server_timestamp ?? heartbeat.timestamp ?? ""
+                      )}
+                    </time>
+                  </dd>
+                </>
+              ) : null}
+            </dl>
           </div>
-        </section>
-      ) : null}
+        ) : null}
+      </form>
 
       {addOpen ? (
         <div className="kiosk-list__modal-root">

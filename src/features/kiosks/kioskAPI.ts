@@ -35,8 +35,8 @@ export interface KioskDetail extends KioskRow {
 
 export interface KioskHeartbeatRequest {
   is_online: boolean
-  face_status: string
-  camera_status: string
+  face_status: boolean
+  camera_status: boolean
 }
 
 export interface KioskHeartbeatResponse {

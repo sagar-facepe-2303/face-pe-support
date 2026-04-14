@@ -475,9 +475,14 @@
 }
 
 .kiosk-list__search-input {
+  display: block;
+  width: 100%;
   flex: 1 1 12rem;
   font: inherit;
   font-size: 1rem;
+  line-height: 1.3;
+  min-height: 2.5rem;
+  max-height: 2.5rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
