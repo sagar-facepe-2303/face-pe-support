@@ -26,7 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         {/* <h1 className="app-header__title">FacePe Support</h1> */}
       </div>
 
-      <div className="app-header__search-wrap">
+      {/* <div className="app-header__search-wrap">
         <label htmlFor="global-search" className="visually-hidden">
           Search workspace
         </label>
@@ -51,11 +51,11 @@ export function Header({ onMenuClick }: HeaderProps) {
             autoComplete="off"
           />
         </span>
-      </div>
+      </div> */}
 
       <div className="app-header__right">
         <ThemeToggle />
-        <button
+        {/* <button
           type="button"
           className="app-header__icon-btn"
           aria-label="Notifications"
@@ -67,8 +67,8 @@ export function Header({ onMenuClick }: HeaderProps) {
               d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
             />
           </svg>
-        </button>
-        <button
+        </button> */}
+        {/* <button
           type="button"
           className="app-header__icon-btn"
           aria-label="Help"
@@ -79,7 +79,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
             />
           </svg>
-        </button>
+        </button> */}
         <NavLink
           to={ROUTES.PROFILE}
           className="app-header__profile app-header__profile-link"

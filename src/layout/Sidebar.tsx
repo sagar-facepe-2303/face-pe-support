@@ -150,12 +150,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </SidebarNavIcon>
           <span className="sidebar__text">Profile</span>
         </NavLink>
-        <button type="button" className="sidebar__link sidebar__link--ghost">
+        {/* <button type="button" className="sidebar__link sidebar__link--ghost">
           <SidebarNavIcon>
             <IconSettings />
           </SidebarNavIcon>
           <span className="sidebar__text">Settings</span>
-        </button>
+        </button> */}
         <button
           type="button"
           className="sidebar__link sidebar__link--logout"

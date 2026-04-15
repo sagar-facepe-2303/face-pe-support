@@ -116,55 +116,67 @@ export function CreateSupportAdmin() {
           onSubmit={onSubmit}
           noValidate
         >
-          <label className="create-support-admin__field">
-            <span>Name</span>
+          <fieldset className="create-support-admin__notched">
+            <legend className="create-support-admin__notched-legend">
+              Name
+            </legend>
             <input
               type="text"
+              className="create-support-admin__notched-control"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter full name"
               autoComplete="name"
               required
             />
-          </label>
+          </fieldset>
 
-          <label className="create-support-admin__field">
-            <span>Email</span>
+          <fieldset className="create-support-admin__notched">
+            <legend className="create-support-admin__notched-legend">
+              Email
+            </legend>
             <input
               type="email"
+              className="create-support-admin__notched-control"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter work email"
               autoComplete="email"
               required
             />
-          </label>
+          </fieldset>
 
-          <label className="create-support-admin__field">
-            <span>Password</span>
+          <fieldset className="create-support-admin__notched">
+            <legend className="create-support-admin__notched-legend">
+              Password
+            </legend>
             <input
               id="create-admin-password"
+              className="create-support-admin__notched-control"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Set temporary password"
+              placeholder="Set password"
               autoComplete="new-password"
               minLength={MIN_PASSWORD_LENGTH}
               required
               aria-describedby="create-admin-password-hint"
             />
-            <span
-              id="create-admin-password-hint"
-              className="create-support-admin__hint"
-            >
-              Use at least {MIN_PASSWORD_LENGTH} characters (required by the
-              server).
-            </span>
-          </label>
+          </fieldset>
+          <span
+            id="create-admin-password-hint"
+            className="create-support-admin__hint"
+          >
+            Use at least {MIN_PASSWORD_LENGTH} characters (required by the
+            server).
+          </span>
 
-          <label className="create-support-admin__field">
-            <span>Role</span>
+          <fieldset className="create-support-admin__notched">
+            <legend className="create-support-admin__notched-legend">
+              Role
+            </legend>
             <select
+              className="create-support-admin__notched-control"
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
               required
@@ -175,7 +187,7 @@ export function CreateSupportAdmin() {
                 </option>
               ))}
             </select>
-          </label>
+          </fieldset>
 
           {error ? (
             <p className="create-support-admin__error" role="alert">
