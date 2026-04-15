@@ -158,9 +158,9 @@ export async function createSupportUser(
     if (
       desiredActive !== undefined &&
       user.is_active !== desiredActive &&
-      user.id
+      user.email
     ) {
-      user = await updateSupportUser(user.id, { is_active: desiredActive })
+      user = await updateSupportUser(user.email, { is_active: desiredActive })
     }
     return user
   } catch (e) {
@@ -174,12 +174,16 @@ export async function fetchSupportUserById(supportUserId: string): Promise<Suppo
   return normalizeSupportUser(response.data)
 }
 
+/**
+ * `PATCH /support-users/{email}` — path segment is the operator's email (not UUID).
+ */
 export async function updateSupportUser(
-  supportUserId: string,
+  supportUserEmail: string,
   payload: UpdateSupportUserPayload
 ): Promise<SupportUserResponse> {
+  const seg = encodeURIComponent(supportUserEmail.trim())
   try {
-    const response = await api.patch<unknown>(`/support-users/${supportUserId}`, payload)
+    const response = await api.patch<unknown>(`/support-users/${seg}`, payload)
     return normalizeSupportUser(response.data)
   } catch (e) {
     throw new Error(getApiErrorMessage(e))

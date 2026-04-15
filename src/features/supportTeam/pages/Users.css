@@ -170,17 +170,17 @@
 }
 
 .support-team-page__widgets {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  margin-top: 1rem;
   min-width: 0;
   width: 100%;
 }
 
-@media (min-width: 48rem) {
-  .support-team-page__widgets {
-    grid-template-columns: 1fr 1fr;
-  }
+.support-team-page__widgets > .support-team-api__table-card {
+  width: 100%;
+  max-width: 100%;
 }
 
 .support-team-page__widget-title {
@@ -317,6 +317,7 @@
 
 .support-team-api__form--modal {
   max-width: none;
+  min-width: 0;
 }
 
 .support-team-api__form--row {
@@ -347,6 +348,9 @@
   margin: 0;
   font-size: 0.8125rem;
   color: var(--error);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .support-team-api__ok {
@@ -608,7 +612,11 @@
   position: relative;
   z-index: 1;
   width: min(100%, 24rem);
+  max-width: 100%;
+  min-width: 0;
   padding: 1.25rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .support-team-api__modal-title {

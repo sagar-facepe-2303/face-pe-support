@@ -343,7 +343,7 @@ function EditSupportUserButton({ user }: { user: SupportUserResponse }) {
     try {
       await dispatch(
         patchSupportUser({
-          id: user.id,
+          email: user.email,
           payload: { name, is_active: editActive },
         }),
       ).unwrap();
@@ -727,7 +727,7 @@ export function Users() {
         </p>
       )}
 
-      <div className="support-team-page__widgets" style={{ marginTop: "1rem" }}>
+      <div className="support-team-page__widgets">
         {showMerchantList ? (
           <SupportUsersSection
             title="Merchant support"
