@@ -302,6 +302,7 @@
 .merchant-list__search-hero {
   margin-bottom: 1rem;
   padding: 1.25rem 1.35rem;
+  border-radius: 0.4rem;
 }
 
 .merchant-list__search-hero-label {
@@ -322,6 +323,7 @@
   border: 1px solid var(--border);
   background: var(--surface-container-lowest);
   color: var(--on-surface);
+  border-radius: 0.4rem;
 }
 
 .merchant-list__search-hero-input:focus-visible {
@@ -456,6 +458,7 @@
 .merchant-list__otp-actions .merchant-list__input {
   min-width: 8rem;
   max-width: 12rem;
+  border-radius: 0.4rem;
 }
 
 .merchant-list__detail {

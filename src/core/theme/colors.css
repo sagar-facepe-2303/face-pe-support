@@ -31,7 +31,7 @@
 
   --shadow-ambient: 0 12px 32px -4px rgba(28, 27, 27, 0.06);
   --shadow-card: 0 4px 24px -6px rgba(28, 27, 27, 0.08);
-  --radius-lg: 1rem;
+  --radius-lg: 0.4rem;
   --radius-md: 0.75rem;
   --radius-xl: 1.25rem;
   --radius-pill: 624.9375rem;
@@ -43,7 +43,7 @@
   --ink-muted: #9ca3af;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   color-scheme: dark;
 
   --primary: #8b5cf6;
