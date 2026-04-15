@@ -393,30 +393,33 @@ export function UserList() {
           Search by mobile (user_phone)
         </label>
         <div className="user-list__search-row">
-          <input
-            id="user-phone-search"
-            className="user-list__search-input"
-            type="search"
-            placeholder="+919123456712"
-            value={userPhoneInput}
-            onChange={(e) => {
-              setUserPhoneInput(e.target.value);
-              setProfileLookupKey(null);
-              setReadOtpToken(null);
-              setReadOtpPhone(null);
-              setOtpSessionId(null);
-              setOtpSendMeta(null);
-              setOtpHint(false);
-              setSearchError(null);
-              setResult(null);
-              setMutationPurpose(null);
-              setMutationSessionId(null);
-              setMutationCode("");
-              setMutationError(null);
-              setMutationSuccess(null);
-            }}
-            autoComplete="off"
-          />
+          <fieldset className="user-list__search-notched">
+            <legend className="user-list__search-notched-legend">Mobile</legend>
+            <input
+              id="user-phone-search"
+              className="user-list__search-input user-list__search-notched-input"
+              type="search"
+              placeholder="+919123456712"
+              value={userPhoneInput}
+              onChange={(e) => {
+                setUserPhoneInput(e.target.value);
+                setProfileLookupKey(null);
+                setReadOtpToken(null);
+                setReadOtpPhone(null);
+                setOtpSessionId(null);
+                setOtpSendMeta(null);
+                setOtpHint(false);
+                setSearchError(null);
+                setResult(null);
+                setMutationPurpose(null);
+                setMutationSessionId(null);
+                setMutationCode("");
+                setMutationError(null);
+                setMutationSuccess(null);
+              }}
+              autoComplete="off"
+            />
+          </fieldset>
           <button
             type="submit"
             className="btn btn--primary btn--sm"
