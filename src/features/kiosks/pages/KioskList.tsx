@@ -40,9 +40,8 @@ export function KioskList() {
   const [hbCameraStatus, setHbCameraStatus] = useState(true);
   const [hbSubmitting, setHbSubmitting] = useState(false);
   const [hbError, setHbError] = useState<string | null>(null);
-  const [heartbeat, setHeartbeat] = useState<kioskAPI.KioskHeartbeatResponse | null>(
-    null
-  );
+  const [heartbeat, setHeartbeat] =
+    useState<kioskAPI.KioskHeartbeatResponse | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
   const [addSubmitting, setAddSubmitting] = useState(false);
@@ -131,9 +130,8 @@ export function KioskList() {
           <p className="page-kicker">Fleet</p>
           <h1 className="page-title">Kiosk inventory</h1>
           <p className="page-desc">
-            Send direct heartbeat payloads using{" "}
-            <code>POST /kiosks/{"{kiosk_id}"}/heartbeat</code>. To register a new kiosk,
-            use the merchant’s primary email.
+            Send a quick update to keep your kiosk active. To add a new kiosk,
+            use the merchant’s primary email address.
           </p>
         </div>
         <div className="kiosk-list__actions">
@@ -194,7 +192,10 @@ export function KioskList() {
             autoComplete="off"
           />
         </div>
-        <div className="kiosk-list__search-row" style={{ marginTop: "0.75rem" }}>
+        <div
+          className="kiosk-list__search-row"
+          style={{ marginTop: "0.75rem" }}
+        >
           <label className="kiosk-list__check">
             <input
               type="checkbox"
@@ -219,12 +220,17 @@ export function KioskList() {
             />
             camera_status
           </label>
-          <button type="submit" className="btn btn--primary btn--sm" disabled={hbSubmitting}>
+          <button
+            type="submit"
+            className="btn btn--primary btn--sm"
+            disabled={hbSubmitting}
+          >
             {hbSubmitting ? "Sending…" : "Send heartbeat"}
           </button>
         </div>
         <p className="kiosk-list__search-hint">
-          Request body: <code>is_online</code>, <code>face_status</code>, <code>camera_status</code>.
+          Request body: <code>is_online</code>, <code>face_status</code>,{" "}
+          <code>camera_status</code>.
         </p>
         {hbError ? (
           <p
@@ -239,18 +245,18 @@ export function KioskList() {
             <h3 className="kiosk-list__hb-title">Heartbeat response</h3>
             <dl className="kiosk-list__result-dl">
               <dt>Acknowledged</dt>
-              <dd>
-                {String(
-                  heartbeat.acknowledged ?? heartbeat.ack ?? "—"
-                )}
-              </dd>
-              {(heartbeat.server_timestamp ?? heartbeat.timestamp) ? (
+              <dd>{String(heartbeat.acknowledged ?? heartbeat.ack ?? "—")}</dd>
+              {heartbeat.server_timestamp ?? heartbeat.timestamp ? (
                 <>
                   <dt>Server time</dt>
                   <dd>
-                    <time dateTime={heartbeat.server_timestamp ?? heartbeat.timestamp}>
+                    <time
+                      dateTime={
+                        heartbeat.server_timestamp ?? heartbeat.timestamp
+                      }
+                    >
                       {formatDisplayDate(
-                        heartbeat.server_timestamp ?? heartbeat.timestamp ?? ""
+                        heartbeat.server_timestamp ?? heartbeat.timestamp ?? "",
                       )}
                     </time>
                   </dd>
