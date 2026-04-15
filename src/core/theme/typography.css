@@ -1,7 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import '@fontsource/hubot-sans/400.css';
+@import '@fontsource/hubot-sans/500.css';
+@import '@fontsource/hubot-sans/600.css';
+@import '@fontsource/hubot-sans/700.css';
 
 :root {
-  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-primary: 'Hubot Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --heading-xl: clamp(2rem, 5vw, 3rem);
   --heading-lg: clamp(1.5rem, 4vw, 2rem);
   --heading-sm: 1.125rem;
