@@ -182,15 +182,18 @@ export function KioskList() {
           Send heartbeat
         </label>
         <div className="kiosk-list__field">
-          <input
-            id="hb-kiosk-id"
-            className="kiosk-list__search-input"
-            type="text"
-            placeholder="Kiosk UUID…"
-            value={hbKioskId}
-            onChange={(e) => setHbKioskId(e.target.value)}
-            autoComplete="off"
-          />
+          <fieldset className="kiosk-list__search-notched">
+            <legend className="kiosk-list__search-notched-legend">Kiosk ID</legend>
+            <input
+              id="hb-kiosk-id"
+              className="kiosk-list__search-input kiosk-list__search-notched-input"
+              type="text"
+              placeholder="Kiosk UUID…"
+              value={hbKioskId}
+              onChange={(e) => setHbKioskId(e.target.value)}
+              autoComplete="off"
+            />
+          </fieldset>
         </div>
         <div
           className="kiosk-list__search-row"
