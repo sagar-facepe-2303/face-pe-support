@@ -629,42 +629,42 @@ export function Users() {
             Add new member
           </h2>
           <form className="support-team-api__form" onSubmit={onInvite}>
-            <label className="support-team-api__field">
-              <span>Name</span>
+            <fieldset className="support-team-api__notched">
+              <legend className="support-team-api__notched-legend">Name</legend>
               <input
-                className="support-team-api__input"
+                className="support-team-api__input support-team-api__notched-control"
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 autoComplete="name"
                 required
               />
-            </label>
-            <label className="support-team-api__field">
-              <span>Email</span>
+            </fieldset>
+            <fieldset className="support-team-api__notched">
+              <legend className="support-team-api__notched-legend">Email</legend>
               <input
-                className="support-team-api__input"
+                className="support-team-api__input support-team-api__notched-control"
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 autoComplete="email"
                 required
               />
-            </label>
-            <label className="support-team-api__field">
-              <span>Password</span>
+            </fieldset>
+            <fieldset className="support-team-api__notched">
+              <legend className="support-team-api__notched-legend">Password</legend>
               <input
-                className="support-team-api__input"
+                className="support-team-api__input support-team-api__notched-control"
                 type="password"
                 value={invitePassword}
                 onChange={(e) => setInvitePassword(e.target.value)}
                 autoComplete="new-password"
                 required
               />
-            </label>
-            <label className="support-team-api__field">
-              <span>Role</span>
+            </fieldset>
+            <fieldset className="support-team-api__notched">
+              <legend className="support-team-api__notched-legend">Role</legend>
               <select
-                className="support-team-api__input"
+                className="support-team-api__input support-team-api__notched-control"
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as Role)}
               >
@@ -674,29 +674,34 @@ export function Users() {
                   </option>
                 ))}
               </select>
-            </label>
-            <div className="support-team-api__toggle">
-              <span
-                id="invite-active-label"
-                className="support-team-api__toggle-text"
-              >
+            </fieldset>
+            <fieldset className="support-team-api__notched">
+              <legend className="support-team-api__notched-legend">
                 Account status
-              </span>
-              <button
-                type="button"
-                className={`support-team-api__switch${
-                  inviteActive ? " support-team-api__switch--on" : ""
-                }`}
-                role="switch"
-                aria-checked={inviteActive}
-                aria-labelledby="invite-active-label"
-                onClick={() => setInviteActive((v) => !v)}
-              >
-                <span className="visually-hidden">
+              </legend>
+              <div className="support-team-api__toggle">
+                <span
+                  id="invite-active-label"
+                  className="support-team-api__toggle-text"
+                >
                   {inviteActive ? "Active" : "Inactive"}
                 </span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className={`support-team-api__switch${
+                    inviteActive ? " support-team-api__switch--on" : ""
+                  }`}
+                  role="switch"
+                  aria-checked={inviteActive}
+                  aria-labelledby="invite-active-label"
+                  onClick={() => setInviteActive((v) => !v)}
+                >
+                  <span className="visually-hidden">
+                    {inviteActive ? "Active" : "Inactive"}
+                  </span>
+                </button>
+              </div>
+            </fieldset>
             <p className="support-team-api__hint">
               {inviteActive
                 ? "New user can sign in."
