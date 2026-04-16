@@ -22,7 +22,8 @@ import {
   SidebarNavIcon,
 } from "./SidebarIcons";
 import "./Sidebar.css";
-import facepeLogoMark from "../assets/images/facepe-logo.png";
+import facepeLogoLight from "../assets/images/facepe-logo.png";
+import facepeLogoDark from "../assets/images/FacePe_Logo_darkmode.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const role = useAppSelector((s) => s.auth.user?.role);
+  const mode = useAppSelector((s) => s.theme.mode);
 
   async function handleLogout() {
     await dispatch(logout());
@@ -52,7 +54,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <span className="sidebar__logo-mark" aria-hidden>
           <img
             className="sidebar__logo-img"
-            src={facepeLogoMark}
+            src={mode === "dark" ? facepeLogoDark : facepeLogoLight}
             alt=""
             aria-hidden
           />

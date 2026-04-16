@@ -21,12 +21,11 @@
   object-fit: contain;
 }
 
-.login-page__brand-title {
-  margin: 0.35rem 0 0;
-  font-size: clamp(2.25rem, 3vw, 3rem);
-  font-weight: 700;
-  color: #151f30;
-  letter-spacing: -0.02em;
+.login-page__brand-title-image {
+  width: min(10rem, 70vw);
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .login-page__panel {

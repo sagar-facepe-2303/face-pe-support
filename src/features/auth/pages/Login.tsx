@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { clearError, login } from "../authSlice";
 import { ROUTES } from "../../../core/config/routes";
-import facepeLogoMark from "../../../assets/images/facepe-logo.png";
+import facepeLogoLight from "../../../assets/images/facepe-logo.png";
+import facepeLogoDark from "../../../assets/images/FacePe_Logo_darkmode.png";
+import facepeNameLight from "../../../assets/images/FacePe Name.jpg";
+import facepeNameDark from "../../../assets/images/FacePe Name Darkmode.png";
 import "./Login.css";
 
 export function Login() {
@@ -13,6 +16,7 @@ export function Login() {
   const token = useAppSelector((s) => s.auth.token);
   const status = useAppSelector((s) => s.auth.status);
   const error = useAppSelector((s) => s.auth.error);
+  const mode = useAppSelector((s) => s.theme.mode);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,8 +52,16 @@ export function Login() {
   return (
     <div className="login-page">
       <div className="login-page__brand" aria-hidden>
-        <img src={facepeLogoMark} alt="" className="login-page__logo-image" />
-        <p className="login-page__brand-title">FacePe</p>
+        <img
+          src={mode === "dark" ? facepeLogoDark : facepeLogoLight}
+          alt=""
+          className="login-page__logo-image"
+        />
+        <img
+          src={mode === "dark" ? facepeNameDark : facepeNameLight}
+          alt=""
+          className="login-page__brand-title-image"
+        />
       </div>
 
       <section className="login-page__panel" aria-label="Login form">
