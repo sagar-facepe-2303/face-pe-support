@@ -15,16 +15,20 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    server: isDev
-      ? {
-          proxy: {
-            '/sp': {
-              target: proxyTarget,
-              changeOrigin: true,
-              secure: true,
+    server: {
+      port: 3001,
+      strictPort: true,
+      ...(isDev
+        ? {
+            proxy: {
+              '/sp': {
+                target: proxyTarget,
+                changeOrigin: true,
+                secure: true,
+              },
             },
-          },
-        }
-      : undefined,
+          }
+        : {}),
+    },
   }
 })
