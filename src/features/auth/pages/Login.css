@@ -98,7 +98,8 @@
   font: inherit;
   font-size: 1rem;
   min-width: 0;
-  -webkit-box-shadow: 0 0 0px 1000px #f9fafb inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 .login-page__input::placeholder {
@@ -173,6 +174,51 @@
 .login-page__submit:focus-visible {
   outline: 2px solid #6d7480;
   outline-offset: 2px;
+}
+
+[data-theme="dark"] .login-page__panel {
+  border-color: #4a5264;
+  background: #141827;
+}
+
+[data-theme="dark"] .login-page__title {
+  color: #f3f6ff;
+}
+
+[data-theme="dark"] .login-page__subtitle {
+  color: #a6b0c3;
+}
+
+[data-theme="dark"] .login-page__fieldset {
+  border-color: #57617a;
+}
+
+[data-theme="dark"] .login-page__legend {
+  color: #b7c0d5;
+}
+
+[data-theme="dark"] .login-page__input {
+  color: #f3f6ff;
+}
+
+[data-theme="dark"] .login-page__input::placeholder {
+  color: #8f99b0;
+}
+
+[data-theme="dark"] .login-page__input-icon {
+  color: #c5cee0;
+}
+
+[data-theme="dark"] .login-page__eye {
+  color: #c5cee0;
+}
+
+[data-theme="dark"] .login-page__remember {
+  color: #b4bdd1;
+}
+
+[data-theme="dark"] .login-page__remember input {
+  accent-color: #9a7fff;
 }
 
 @media (max-width: 36rem) {
