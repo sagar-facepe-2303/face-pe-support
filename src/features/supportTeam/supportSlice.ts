@@ -125,11 +125,11 @@ export const inviteSupportUser = createAsyncThunk(
 export const patchSupportUser = createAsyncThunk(
   'support/patch',
   async (
-    { id, payload }: { id: string; payload: UpdateSupportUserPayload },
+    { email, payload }: { email: string; payload: UpdateSupportUserPayload },
     { rejectWithValue }
   ) => {
     try {
-      return await supportAPI.updateSupportUser(id, payload)
+      return await supportAPI.updateSupportUser(email, payload)
     } catch (e) {
       return rejectWithValue(e instanceof Error ? e.message : getApiErrorMessage(e))
     }

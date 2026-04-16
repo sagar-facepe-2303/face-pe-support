@@ -424,27 +424,32 @@ export function MerchantList() {
           Search merchant
         </label>
         <div className="merchant-list__search-row">
-          <input
-            id="merchant-id-search"
-            className="merchant-list__search-hero-input"
-            type="search"
-            placeholder="Merchant email (e.g. name@example.com)…"
-            value={merchantIdInput}
-            onChange={(e) => {
-              const v = e.target.value;
-              setMerchantIdInput(v);
-              setOtpSessionId(null);
-              setOtpHint(false);
-              const tid = v.trim();
-              if (result && (!tid || tid !== result.detail.pathKey)) {
-                setResult(null);
-                setOtpReadToken(null);
-                setTokenMerchantKey(null);
-                clearMerchantReadSession();
-              }
-            }}
-            autoComplete="off"
-          />
+          <fieldset className="merchant-list__search-notched">
+            <legend className="merchant-list__search-notched-legend">
+              E-mail
+            </legend>
+            <input
+              id="merchant-id-search"
+              className="merchant-list__search-hero-input merchant-list__search-notched-input"
+              type="search"
+              placeholder="Merchant email (e.g. name@example.com)…"
+              value={merchantIdInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMerchantIdInput(v);
+                setOtpSessionId(null);
+                setOtpHint(false);
+                const tid = v.trim();
+                if (result && (!tid || tid !== result.detail.pathKey)) {
+                  setResult(null);
+                  setOtpReadToken(null);
+                  setTokenMerchantKey(null);
+                  clearMerchantReadSession();
+                }
+              }}
+              autoComplete="off"
+            />
+          </fieldset>
           <button
             type="submit"
             className="btn btn--primary btn--sm"

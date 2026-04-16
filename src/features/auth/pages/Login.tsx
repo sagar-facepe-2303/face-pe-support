@@ -1,20 +1,22 @@
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { clearError, login } from "../authSlice";
 import { ROUTES } from "../../../core/config/routes";
-import { ThemeToggle } from "../../../layout/ThemeToggle";
-import { AuthForm } from "../components/AuthForm";
+import facepeLogoLight from "../../../assets/images/facepe-logo.png";
+import facepeLogoDark from "../../../assets/images/FacePe_Logo_darkmode.png";
+import facepeNameLight from "../../../assets/images/FacePe Name.jpg";
+import facepeNameDark from "../../../assets/images/FacePe Name Darkmode.png";
 import "./Login.css";
 
 export function Login() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const formTitleId = useId();
   const token = useAppSelector((s) => s.auth.token);
   const status = useAppSelector((s) => s.auth.status);
   const error = useAppSelector((s) => s.auth.error);
+  const mode = useAppSelector((s) => s.theme.mode);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,38 +51,27 @@ export function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-page__theme">
-        <ThemeToggle />
-      </div>
-      <div className="login-page__hero">
-        <div className="login-page__brand">
-          <span className="login-page__logo" aria-hidden />
-          <div>
-            <div className="login-page__brand-title">FacePe Support</div>
-            <p className="login-page__brand-tag">
-              The orchestrated workspace for administrators
-            </p>
-          </div>
-        </div>
+      <div className="login-page__brand" aria-hidden>
+        <img
+          src={mode === "dark" ? facepeLogoDark : facepeLogoLight}
+          alt=""
+          className="login-page__logo-image"
+        />
+        <img
+          src={mode === "dark" ? facepeNameDark : facepeNameLight}
+          alt=""
+          className="login-page__brand-title-image"
+        />
       </div>
 
-      <div className="login-page__panel">
-        <AuthForm
-          aria-labelledby={formTitleId}
-          title="Welcome back"
-          subtitle="Please enter your credentials to access the workspace."
-          onSubmit={handleSubmit}
-          footer={
-            <>
-              Authorized access only. Unauthorized attempts are logged. Need
-              help? <a href="#security">Contact Security Team</a>
-            </>
-          }
-        >
-          <div className="login-page__field">
-            <label htmlFor="login-email" className="login-page__label">
-              Work Email
-            </label>
+      <section className="login-page__panel" aria-label="Login form">
+        <h1 className="login-page__title">Welcome Back</h1>
+        <p className="login-page__subtitle">
+          Enter your credentials to access your account
+        </p>
+        <form className="login-page__form" onSubmit={handleSubmit} noValidate>
+          <fieldset className="login-page__fieldset">
+            <legend className="login-page__legend">E-mail</legend>
             <div className="login-page__input-wrap">
               <span className="login-page__input-icon" aria-hidden>
                 ✉
@@ -91,23 +82,16 @@ export function Login() {
                 type="email"
                 autoComplete="username"
                 className="login-page__input"
-                placeholder="agent@facepe.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-          </div>
+          </fieldset>
 
-          <div className="login-page__field">
-            <div className="login-page__label-row">
-              <label htmlFor="login-password" className="login-page__label">
-                Password
-              </label>
-              <button type="button" className="login-page__link-btn">
-                Forgot password?
-              </button>
-            </div>
+          <fieldset className="login-page__fieldset">
+            <legend className="login-page__legend">Password</legend>
             <div className="login-page__input-wrap">
               <span className="login-page__input-icon" aria-hidden>
                 🔒
@@ -118,6 +102,7 @@ export function Login() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 className="login-page__input"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -131,7 +116,7 @@ export function Login() {
                 👁
               </button>
             </div>
-          </div>
+          </fieldset>
 
           <label className="login-page__remember">
             <input
@@ -139,7 +124,7 @@ export function Login() {
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
-            <span>Remember this device</span>
+            <span>Remember me</span>
           </label>
 
           {error ? (
@@ -150,21 +135,13 @@ export function Login() {
 
           <button
             type="submit"
-            className="login-page__submit btn btn--primary"
+            className="login-page__submit btn--primary"
             disabled={status === "loading"}
           >
-            {status === "loading" ? "Signing in…" : "Sign In to Workspace"} →
+            {status === "loading" ? "Signing in…" : "Sign In"}
           </button>
-        </AuthForm>
-      </div>
-
-      <div className="login-page__status-bar" role="status" aria-live="polite">
-        <span>
-          <span className="login-page__dot" aria-hidden /> MAINNET LIVE
-        </span>
-        <span>🔒 END-TO-END ENCRYPTED</span>
-        <span>V4.2.0-STABLE</span>
-      </div>
+        </form>
+      </section>
     </div>
   );
 }

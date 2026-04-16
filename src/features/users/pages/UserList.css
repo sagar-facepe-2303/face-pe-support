@@ -299,6 +299,7 @@
 .user-list__search {
   margin-bottom: 1rem;
   padding: 1.25rem 1.35rem;
+  border-radius: 0.4rem;
 }
 
 .user-list__search-label {
@@ -314,6 +315,48 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.user-list__search-row .user-list__search-input,
+.user-list__search-row .user-list__search-notched {
+  flex: 1 1 12rem;
+  max-width: none;
+}
+
+.user-list__search-notched {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.75rem 0.2rem;
+  background: var(--surface-container-lowest);
+}
+
+.user-list__search-notched-legend {
+  margin-left: 0.1rem;
+  padding: 0 0.3rem;
+  background: var(--surface-container-lowest);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.user-list__search-notched-input {
+  border: none !important;
+  background: transparent !important;
+  padding: 0.2rem 0 0.15rem !important;
+  width: 100%;
+}
+
+.user-list__search-notched-input:focus,
+.user-list__search-notched-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.user-list__search-notched:focus-within {
+  border-color: var(--primary);
+  box-shadow: none;
 }
 
 .user-list__search-input {
@@ -342,6 +385,7 @@
 .user-list__result {
   margin-top: 0.5rem;
   padding: 1.25rem;
+  border-radius: 0.4rem;
 }
 
 .user-list__result-head {

@@ -1,6 +1,7 @@
 .audit-logs__card {
   padding: 0;
   overflow: hidden;
+  border-radius: 0.4rem;
 }
 
 .audit-logs__loading {
