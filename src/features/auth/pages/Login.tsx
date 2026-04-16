@@ -49,7 +49,7 @@ export function Login() {
     <div className="login-page">
       <div className="login-page__brand" aria-hidden>
         <img src={facepeLogoMark} alt="" className="login-page__logo-image" />
-        <p className="login-page__brand-title">Face Pe</p>
+        <p className="login-page__brand-title">FacePe</p>
       </div>
 
       <section className="login-page__panel" aria-label="Login form">
