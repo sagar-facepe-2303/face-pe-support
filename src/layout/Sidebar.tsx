@@ -24,6 +24,8 @@ import {
 import "./Sidebar.css";
 import facepeLogoLight from "../assets/images/facepe-logo.png";
 import facepeLogoDark from "../assets/images/FacePe_Logo_darkmode.png";
+import facepeNameLight from "../assets/images/FacePe Name.jpg";
+import facepeNameDark from "../assets/images/FacePe Name Darkmode.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -60,7 +62,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           />
         </span>
         <div className="sidebar__brand-text">
-          <div className="sidebar__logo-title">FacePe</div>
+          <img
+            className="sidebar__logo-title-img"
+            src={mode === "dark" ? facepeNameDark : facepeNameLight}
+            alt="FacePe"
+          />
           <div className="sidebar__logo-sub">Admin Workspace</div>
         </div>
         <button
