@@ -17,7 +17,6 @@ import {
   IconLogout,
   IconMerchants,
   IconProfile,
-  IconSettings,
   IconUsers,
   SidebarNavIcon,
 } from "./SidebarIcons";
